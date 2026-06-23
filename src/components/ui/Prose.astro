@@ -1,0 +1,24 @@
+---
+// src/components/ui/Prose.astro
+
+interface Props {
+  className?: string;
+}
+
+const { className = '' } = Astro.props;
+
+import { cn } from '@/lib/utils';
+
+const classes = cn(
+  'prose prose-gray dark:prose-invert max-w-none',
+  'prose-headings:font-display prose-headings:tracking-tight',
+  'prose-code:before:content-none prose-code:after:content-none',
+  'prose-a:no-underline prose-a:hover:underline prose-a:text-primary prose-a:underline-offset-2',
+  'prose-img:rounded-lg prose-img:shadow-md',
+  className,
+);
+---
+
+<article class={classes}>
+  <slot />
+</article>

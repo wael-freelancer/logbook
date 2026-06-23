@@ -1,0 +1,53 @@
+---
+// src/components/ui/Card.astro
+
+interface Props {
+  url?: string;
+  elevation?: 'flat' | 'raised' | 'interactive';
+  className?: string;
+}
+
+const {
+  url,
+  elevation = 'flat',
+  className = '',
+} = Astro.props;
+
+import { cn } from '@/lib/utils';
+
+const baseClasses = 'flex flex-col rounded-lg border border-border bg-surface transition-shadow';
+
+const elevationClasses = {
+  flat: 'border border-border bg-surface',
+  raised: 'shadow-md border-0',
+  interactive: 'hover:shadow-lg hover:-translate-y-0.5 transition-all cursor-pointer',
+};
+
+const classes = cn(
+  baseClasses,
+  elevationClasses[elevation],
+  className,
+);
+---
+
+{url ? (
+  <article class={classes}>
+    <!-- Invisible clickable link covering entire card -->
+    {url && (
+      <a 
+        href={url} 
+        class="absolute inset-0 rounded-lg focus-visible:ring-2 focus-visible:ring-primary" 
+        aria-label={<slot name="title" />}
+      />
+    )}
+    
+    <!-- Content with relative z-index so inner links are clickable -->
+    <div class="relative z-10 p-6">
+      <slot />
+    </div>
+  </article>
+) : (
+  <article class={classes}>
+    <slot />
+  </article>
+)}

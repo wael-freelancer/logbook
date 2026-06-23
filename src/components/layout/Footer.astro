@@ -1,0 +1,45 @@
+---
+// src/components/layout/Footer.astro
+
+interface Props {
+  year?: number;
+  author?: string;
+  links?: Array<{ href: string; label: string }>;
+}
+
+const { year = new Date().getFullYear(), author = 'Log Book', links = [
+  { href: '/blog', label: 'Blog' },
+  { href: '/about', label: 'About' },
+  { href: '/contact', label: 'Contact' },
+] } = Astro.props;
+
+const currentYear = year;
+---
+
+<footer class="border-t border-border">
+  <div class="mx-auto max-w-screen-xl px-4 py-12 sm:px-6 lg:px-8">
+    <div class="flex flex-col items-center justify-between gap-4 sm:flex-row">
+      <!-- Copyright -->
+      <p class="text-sm text-text-secondary">
+        &copy; {currentYear} {author}. All rights reserved.
+      </p>
+
+      <!-- Links -->
+      <nav aria-label="Footer navigation" class="flex items-center gap-6">
+        {links.map((link) => (
+          <a 
+            href={link.href} 
+            class="text-sm text-text-secondary transition-colors hover:text-text focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary focus-visible:ring-offset-2"
+          >
+            {link.label}
+          </a>
+        ))}
+      </nav>
+    </div>
+
+    <!-- Built with Astro -->
+    <p class="mt-6 text-center text-xs text-text-tertiary sm:text-left">
+      Built with <a href="https://astro.build" target="_blank" rel="noopener noreferrer" class="text-primary hover:underline">Astro</a> and Tailwind CSS.
+    </p>
+  </div>
+</footer>

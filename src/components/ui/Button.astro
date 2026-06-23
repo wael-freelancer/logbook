@@ -1,0 +1,59 @@
+---
+// src/components/ui/Button.astro
+
+interface Props {
+  variant?: 'primary' | 'secondary' | 'ghost';
+  size?: 'sm' | 'default' | 'lg';
+  disabled?: boolean;
+  href?: string;
+  className?: string;
+}
+
+const {
+  variant = 'primary',
+  size = 'default',
+  disabled = false,
+  href,
+  className = '',
+} = Astro.props;
+
+import { cn } from '@/lib/utils';
+
+const baseClasses = 'inline-flex items-center justify-center rounded-md font-medium transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary focus-visible:ring-offset-2 disabled:pointer-events-none disabled:opacity-50';
+
+const variantClasses = {
+  primary: 'bg-primary text-text-inverse hover:bg-primary-hover shadow-sm',
+  secondary: 'border border-border bg-transparent text-text hover:bg-surface-2',
+  ghost: 'bg-transparent text-text hover:bg-surface-2',
+};
+
+const sizeClasses = {
+  sm: 'px-3 py-1.5 text-sm',
+  default: 'px-4 py-2 text-sm',
+  lg: 'px-6 py-3 text-base',
+};
+
+const classes = cn(
+  baseClasses,
+  variantClasses[variant],
+  sizeClasses[size],
+  className,
+);
+---
+
+{href ? (
+  <a 
+    href={href} 
+    class={classes}
+    aria-disabled={disabled}
+  >
+    <slot />
+  </a>
+) : (
+  <button 
+    class={classes}
+    disabled={disabled}
+  >
+    <slot />
+  </button>
+)}

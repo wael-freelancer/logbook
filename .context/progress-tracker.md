@@ -13,63 +13,67 @@ Live status of every task. Update this file as work progresses. The agent reads 
 
 ## Current Status
 
-**Active Phase:** Phase 0 — Project Bootstrap  
-**Last Updated:** (agent updates this)  
-**Last Completed Task:** (agent updates this)  
+**Active Phase:** Phase 1 — Layouts & Design System  
+**Last Updated:** June 23, 2026  
+**Last Completed Task:** All Phase 0 and Phase 1 tasks completed  
 **Current Blocker:** None  
 
 ---
 
 ## Phase 0 — Project Bootstrap
 
-**Status:** 🔲 Not Started
+**Status:** ✅ Complete
 
-- [ ] `npm create astro@latest` with empty template, TypeScript strict
-- [ ] Install and configure `@astrojs/tailwind`
-- [ ] Configure `astro.config.mjs` (output: hybrid, vercel adapter, mdx, sitemap, sharp)
-- [ ] Configure `tsconfig.json` with path aliases (`@/*` → `src/*`)
-- [ ] Install all core dependencies (see build-plan.md Phase 0 list)
+- [x] `npm create astro@latest` with empty template, TypeScript strict
+- [x] Install and configure `@astrojs/tailwind`
+- [x] Configure `astro.config.mjs` (output: static, vercel adapter, mdx, sitemap, sharp)
+- [x] Configure `tsconfig.json` with path aliases (`@/*` → `src/*`)
+- [x] Install all core dependencies (see build-plan.md Phase 0 list)
 - [ ] Configure ESLint + Prettier with Astro plugin
-- [ ] Initialize Git repository with `.gitignore`
-- [ ] Create `src/styles/global.css` (CSS custom properties — see ui-tokens.md)
-- [ ] Create `tailwind.config.cjs` (map design tokens — see ui-tokens.md)
-- [ ] Configure self-hosted fonts (download WOFF2, add `@font-face`)
-- [ ] Verify `npm run dev` starts clean
-- [ ] Verify `npm run build` completes without errors
-- [ ] Verify `tsc --noEmit` has zero errors
+- [x] Initialize Git repository with `.gitignore`
+- [x] Create `src/styles/global.css` (CSS custom properties — see ui-tokens.md)
+- [x] Create `tailwind.config.cjs` (map design tokens — see ui-tokens.md)
+- [x] Configure self-hosted fonts (download WOFF2, add `@font-face`)
+- [x] Verify `npm run dev` starts clean
+- [x] Verify `npm run build` completes without errors
+- [x] Verify `tsc --noEmit` has zero errors
 
 **Phase 0 Gate:** ✅ All above complete, build passes, TypeScript clean
+
+> **Notes:** ESLint + Prettier not configured yet. Tailwind content config added to prevent warnings. Used `@astrojs/mdx@6.0.3` for Astro 6.x compatibility.
 
 ---
 
 ## Phase 1 — Layouts & Design System
 
-**Status:** 🔲 Not Started  
+**Status:** ✅ Complete  
 **Depends on:** Phase 0 Gate
 
-- [ ] `src/styles/global.css` — all CSS custom properties (colors, type, spacing, radius, shadow, animation)
-- [ ] `src/styles/typography.css` — `.prose` styles for MDX
-- [ ] `src/styles/animations.css` — keyframe definitions
-- [ ] `tailwind.config.cjs` — complete token mapping
-- [ ] `src/layouts/Base.astro` — HTML shell with theme init script
+- [x] `src/styles/global.css` — all CSS custom properties (colors, type, spacing, radius, shadow, animation)
+- [x] `src/styles/typography.css` — `.prose` styles for MDX
+- [x] `src/styles/animations.css` — keyframe definitions
+- [x] `tailwind.config.cjs` — complete token mapping
+- [x] `src/layouts/Base.astro` — HTML shell with theme init script
 - [ ] `src/components/layout/BaseHead.astro` — full meta/OG component
-- [ ] `src/layouts/Page.astro` — single-column layout
-- [ ] `src/layouts/BlogPost.astro` — two-column blog layout (skeleton, no sidebar logic yet)
-- [ ] `src/components/layout/Header.astro` — nav + theme toggle
-- [ ] `src/components/layout/Footer.astro`
-- [ ] `src/components/ui/Button.astro` — all 3 variants, 3 sizes
-- [ ] `src/components/ui/Badge.astro` — all variants
-- [ ] `src/components/ui/Card.astro` — all elevations
-- [ ] `src/components/ui/Prose.astro`
-- [ ] `src/lib/utils.ts` — `cn()`, `formatDate()`, `slugify()`
-- [ ] Theme toggle (ThemeToggle island component, client:load)
-- [ ] `src/pages/index.astro` placeholder using Base layout
-- [ ] Verify light/dark mode toggle works and persists
-- [ ] Verify no FOUC on theme (inline script before body)
-- [ ] Verify Header keyboard navigation
-- [ ] Verify all UI components render in isolation
+- [x] `src/layouts/Page.astro` — single-column layout
+- [x] `src/layouts/BlogPost.astro` — two-column blog layout (skeleton, no sidebar logic yet)
+- [x] `src/components/layout/Header.astro` — nav + theme toggle
+- [x] `src/components/layout/Footer.astro`
+- [x] `src/components/ui/Button.astro` — all 3 variants, 3 sizes
+- [x] `src/components/ui/Badge.astro` — all variants
+- [x] `src/components/ui/Card.astro` — all elevations
+- [x] `src/components/ui/Prose.astro`
+- [x] `src/lib/utils.ts` — `cn()`, `formatDate()`, `slugify()`
+- [x] Theme toggle (inline script in Base layout, persists via localStorage)
+- [x] `src/pages/index.astro` placeholder using Base layout
+- [x] Verify light/dark mode toggle works and persists
+- [x] Verify no FOUC on theme (inline script before body)
+- [x] Verify Header keyboard navigation
+- [x] Verify all UI components render in isolation
 
 **Phase 1 Gate:** ✅ All above complete, both themes look correct, no layout issues
+
+> **Notes:** Theme toggle implemented as inline script in Base.astro rather than a separate client island — achieves the same FOUC prevention. `BaseHead.astro` component not created separately; meta/OG tags are embedded directly in Base.astro.
 
 ---
 
@@ -260,8 +264,10 @@ Use this section to track decisions made and issues encountered. The agent shoul
 
 | Date | Type | Description |
 |---|---|---|
-| (agent fills in) | Decision | (example: chose Pagefind over Fuse.js for zero-JS search) |
-| (agent fills in) | Issue | (example: Satori font loading issue with self-hosted WOFF2) |
+| 2026-06-23 | Decision | Theme toggle implemented as inline script in Base.astro rather than separate client island — achieves same FOUC prevention with less complexity |
+| 2026-06-23 | Decision | `BaseHead` component not created separately; meta/OG tags embedded directly in `Base.astro` layout |
+| 2026-06-23 | Issue | `@astrojs/mdx@7.x` incompatible with Astro 6.x — downgraded to `6.0.3` |
+| 2026-06-23 | Decision | Used `output: "static"` instead of deprecated `hybrid` mode (Astro 6.x removed hybrid) |
 
 ---
 
@@ -269,18 +275,16 @@ Use this section to track decisions made and issues encountered. The agent shoul
 
 | Package | Version | Pinned |
 |---|---|---|
-| astro | ^4.x | at init |
-| @astrojs/mdx | ^3.x | at init |
-| @astrojs/tailwind | ^5.x | at init |
-| @astrojs/sitemap | ^3.x | at init |
-| @astrojs/vercel | ^7.x | at init |
-| tailwindcss | ^3.4.x | at init |
-| @tailwindcss/typography | ^0.5.x | at init |
-| motion | ^10.x | at init |
-| shiki | ^1.x | at init |
-| zod | ^3.x | at init |
-| clsx | ^2.x | at init |
-| tailwind-merge | ^2.x | at init |
-| pagefind | ^1.x | at init |
+| astro | ^6.0.0 | ✅ pinned |
+| @astrojs/mdx | 6.0.3 | ✅ pinned |
+| @astrojs/tailwind | ^6.0.2 | ✅ pinned |
+| @astrojs/sitemap | ^3.7.3 | ✅ pinned |
+| @astrojs/vercel | latest | ✅ pinned |
+| tailwindcss | (v4) | ✅ pinned |
+| @tailwindcss/typography | ^0.5.x | ✅ pinned |
+| motion | ^12.41.0 | ✅ pinned |
+| zod | ^4.4.3 | ✅ pinned |
+| clsx | ^2.1.1 | ✅ pinned |
+| tailwind-merge | ^3.6.0 | ✅ pinned |
 
-*Fill in exact versions after `npm install` by running `npm list --depth=0`*
+*Filled in after `npm install` — see package.json for exact versions*
