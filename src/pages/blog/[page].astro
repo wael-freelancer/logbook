@@ -5,6 +5,7 @@ import Header from '@/components/layout/Header.astro';
 import Footer from '@/components/layout/Footer.astro';
 import { formatDate } from '@/lib/utils';
 import { getReadingTime, getAllTags } from '@/lib/posts';
+import Pagination from '@/components/ui/Pagination.astro';
 
 export async function getStaticPaths() {
   const pageSize = 10;
@@ -28,8 +29,6 @@ export async function getStaticPaths() {
 
 const { posts, currentPage, totalPages } = Astro.props;
 const allTags = Astro.props.allTags ?? [];
-const prevPage = `/blog/${currentPage - 1}`;
-const nextPage = currentPage < totalPages ? `/blog/${currentPage + 1}` : null;
 ---
 
 <BaseLayout title={`Blog — Page ${currentPage} — Log Book`} description="Technical articles about web development.">
@@ -88,25 +87,7 @@ const nextPage = currentPage < totalPages ? `/blog/${currentPage + 1}` : null;
         ))}
       </div>
 
-      <nav class="mt-12 flex items-center justify-center gap-4">
-        <a
-          href={prevPage ?? '/blog'}
-          class="inline-flex items-center gap-1 rounded-lg border border-border px-4 py-2 text-sm font-medium text-text-secondary transition-colors hover:bg-surface-2 hover:text-text"
-        >
-          ← Previous
-        </a>
-        <span class="text-sm text-text-tertiary">
-          Page {currentPage} of {totalPages}
-        </span>
-        {nextPage && (
-          <a
-            href={nextPage}
-            class="inline-flex items-center gap-1 rounded-lg border border-border px-4 py-2 text-sm font-medium text-text-secondary transition-colors hover:bg-surface-2 hover:text-text"
-          >
-            Next →
-          </a>
-        )}
-      </nav>
+      <Pagination currentPage={currentPage} totalPages={totalPages} baseUrl="/blog/{page}" />
     </div>
   </main>
   <Footer />

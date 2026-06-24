@@ -5,6 +5,7 @@ import Header from '@/components/layout/Header.astro';
 import Footer from '@/components/layout/Footer.astro';
 import { formatDate } from '@/lib/utils';
 import { getReadingTime } from '@/lib/posts';
+import Pagination from '@/components/ui/Pagination.astro';
 
 const allPosts = await getCollection('blog', ({ data }) => !data.draft);
 const sorted = allPosts.sort((a, b) => b.data.pubDate.valueOf() - a.data.pubDate.valueOf());
@@ -82,21 +83,7 @@ const tags = Array.from(tagMap.entries())
         ))}
       </div>
 
-      {totalPages > 1 && (
-        <nav class="mt-12 flex items-center justify-center gap-4" aria-label="Blog pagination">
-          <span class="text-sm text-text-tertiary">
-            Page {currentPage} of {totalPages}
-          </span>
-          {nextPage && (
-            <a
-              href={nextPage}
-              class="inline-flex items-center gap-1 rounded-lg border border-border px-4 py-2 text-sm font-medium text-text-secondary transition-colors hover:bg-surface-2 hover:text-text"
-            >
-              Next →
-            </a>
-          )}
-        </nav>
-      )}
+      <Pagination currentPage={currentPage} totalPages={totalPages} baseUrl="/blog/{page}" />
     </div>
   </main>
   <Footer />

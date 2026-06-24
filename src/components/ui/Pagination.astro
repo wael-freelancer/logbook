@@ -1,0 +1,36 @@
+---
+import { cn } from '@/lib/utils';
+
+interface Props {
+  currentPage: number;
+  totalPages: number;
+  baseUrl: string;
+}
+
+const { currentPage, totalPages, baseUrl } = Astro.props;
+
+const prevPage = currentPage > 1 ? baseUrl.replace('{page}', String(currentPage - 1)) : null;
+const nextPage = currentPage < totalPages ? baseUrl.replace('{page}', String(currentPage + 1)) : null;
+
+const linkClasses = cn(
+  'inline-flex items-center gap-1 rounded-lg border border-border px-4 py-2 text-sm font-medium text-text-secondary transition-colors hover:bg-surface-2 hover:text-text',
+);
+---
+
+{totalPages > 1 && (
+  <nav class="mt-12 flex items-center justify-center gap-4" aria-label="Pagination">
+    {prevPage && (
+      <a href={prevPage} class={linkClasses}>
+        ← Previous
+      </a>
+    )}
+    <span class="text-sm text-text-tertiary">
+      Page {currentPage} of {totalPages}
+    </span>
+    {nextPage && (
+      <a href={nextPage} class={linkClasses}>
+        Next →
+      </a>
+    )}
+  </nav>
+)}
