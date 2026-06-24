@@ -13,8 +13,6 @@ const pageSize = 10;
 const totalPages = Math.max(1, Math.ceil(sorted.length / pageSize));
 const currentPage = 1;
 const posts = sorted.slice(0, pageSize);
-const prevPage = null;
-const nextPage = sorted.length > pageSize ? '/blog/2' : null;
 
 const tagMap = new Map<string, number>();
 for (const post of sorted) {

@@ -9,8 +9,12 @@ interface Props {
 
 const { currentPage, totalPages, baseUrl } = Astro.props;
 
-const prevPage = currentPage > 1 ? baseUrl.replace('{page}', String(currentPage - 1)) : null;
-const nextPage = currentPage < totalPages ? baseUrl.replace('{page}', String(currentPage + 1)) : null;
+const prevPage = currentPage > 2
+  ? baseUrl.replace('{page}', String(currentPage - 1))
+  : baseUrl.replace('/{page}', '');
+const nextPage = currentPage < totalPages
+  ? baseUrl.replace('{page}', String(currentPage + 1))
+  : null;
 
 const linkClasses = cn(
   'inline-flex items-center gap-1 rounded-lg border border-border px-4 py-2 text-sm font-medium text-text-secondary transition-colors hover:bg-surface-2 hover:text-text',
@@ -19,7 +23,7 @@ const linkClasses = cn(
 
 {totalPages > 1 && (
   <nav class="mt-12 flex items-center justify-center gap-4" aria-label="Pagination">
-    {prevPage && (
+    {currentPage > 1 && (
       <a href={prevPage} class={linkClasses}>
         ← Previous
       </a>
@@ -27,7 +31,7 @@ const linkClasses = cn(
     <span class="text-sm text-text-tertiary">
       Page {currentPage} of {totalPages}
     </span>
-    {nextPage && (
+    {currentPage < totalPages && (
       <a href={nextPage} class={linkClasses}>
         Next →
       </a>
