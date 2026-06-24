@@ -171,6 +171,7 @@ const currentPath = Astro.url.pathname;
     try {
       localStorage.setItem('theme', newTheme);
     } catch (e) {
+      /* eslint-disable-next-line no-console */
       console.warn('localStorage not available');
     }
 

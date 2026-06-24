@@ -29,7 +29,7 @@ Live status of every task. Update this file as work progresses. The agent reads 
 - [x] Configure `astro.config.mjs` (output: static, vercel adapter, mdx, sitemap, sharp)
 - [x] Configure `tsconfig.json` with path aliases (`@/*` → `src/*`)
 - [x] Install all core dependencies (see build-plan.md Phase 0 list)
-- [ ] Configure ESLint + Prettier with Astro plugin
+- [x] Configure ESLint + Prettier with Astro plugin
 - [x] Initialize Git repository with `.gitignore`
 - [x] Create `src/styles/global.css` (CSS custom properties — see ui-tokens.md)
 - [x] Create `tailwind.config.cjs` (map design tokens — see ui-tokens.md)
@@ -40,7 +40,7 @@ Live status of every task. Update this file as work progresses. The agent reads 
 
 **Phase 0 Gate:** ✅ All above complete, build passes, TypeScript clean
 
-> **Notes:** ESLint + Prettier not configured yet. Tailwind content config added to prevent warnings. Used `@astrojs/mdx@6.0.3` for Astro 6.x compatibility.
+> **Notes:** Tailwind content config added to prevent warnings. Used `@astrojs/mdx@6.0.3` for Astro 6.x compatibility.
 
 ---
 
@@ -54,7 +54,7 @@ Live status of every task. Update this file as work progresses. The agent reads 
 - [x] `src/styles/animations.css` — keyframe definitions
 - [x] `tailwind.config.cjs` — complete token mapping
 - [x] `src/layouts/Base.astro` — HTML shell with theme init script
-- [ ] `src/components/layout/BaseHead.astro` — full meta/OG component
+- [x] `src/components/layout/BaseHead.astro` — full meta/OG component
 - [x] `src/layouts/Page.astro` — single-column layout
 - [x] `src/layouts/BlogPost.astro` — two-column blog layout (skeleton, no sidebar logic yet)
 - [x] `src/components/layout/Header.astro` — nav + theme toggle
@@ -73,7 +73,7 @@ Live status of every task. Update this file as work progresses. The agent reads 
 
 **Phase 1 Gate:** ✅ All above complete, both themes look correct, no layout issues
 
-> **Notes:** Theme toggle implemented as inline script in Base.astro rather than a separate client island — achieves the same FOUC prevention. `BaseHead.astro` component not created separately; meta/OG tags are embedded directly in Base.astro.
+> **Notes:** Theme toggle implemented as inline script in Base.astro rather than a separate client island — achieves the same FOUC prevention. `BaseHead.astro` extracted as dedicated meta/OG component in Phase 1 completion.
 
 ---
 
@@ -281,6 +281,7 @@ Use this section to track decisions made and issues encountered. The agent shoul
 | 2026-06-24 | Decision | `markdown.processor` with `unified()` instead of deprecated `rehypePlugins` |
 | 2026-06-24 | Issue | JetBrains Mono font referenced in global.css but not present in public/fonts/ |
 | 2026-06-24 | Decision | Simplified project schemas — removed `image()` since no project cover images yet |
+| 2026-06-24 | Decision | ESLint flat config with `eslint-plugin-astro` and `prettier-plugin-astro`, `--legacy-peer-deps` needed for @astrojs/tailwind v6 incompatibility |
 
 ---
 

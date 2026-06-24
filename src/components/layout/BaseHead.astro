@@ -1,0 +1,57 @@
+---
+export interface Props {
+  title: string;
+  description?: string;
+  ogImage?: string;
+  ogType?: 'website' | 'article';
+  canonicalUrl?: string;
+}
+
+const { title, description, ogImage, ogType = 'website', canonicalUrl } = Astro.props;
+const siteUrl = import.meta.env.SITE ?? 'https://logbook.test';
+const defaultDescription = 'A personal portfolio and technical blog by a software engineer.';
+const finalDescription = description ?? defaultDescription;
+const ogUrl = `${siteUrl}${Astro.url.pathname}`;
+const ogImageUrl = ogImage ? new URL(ogImage, siteUrl).toString() : undefined;
+---
+
+<!-- Theme initialization — prevents FOUC -->
+<script is:inline>
+  const theme = localStorage.getItem('theme')
+    ?? (window.matchMedia('(prefers-color-scheme: dark)').matches ? 'dark' : 'light');
+  document.documentElement.setAttribute('data-theme', theme);
+</script>
+
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<meta name="description" content={finalDescription} />
+<meta name="generator" content="Astro 6.x" />
+
+<link rel="icon" href="/favicon.ico" sizes="32x32" />
+<link rel="icon" href="/favicon.svg" type="image/svg+xml" />
+
+<!-- Preload fonts -->
+<link rel="preload" href="/fonts/CalSans-SemiBold.woff2" as="font" type="font/woff2" crossorigin />
+<link rel="preload" href="/fonts/InterVariable.woff2" as="font" type="font/woff2" crossorigin />
+
+<title>{title}</title>
+
+<!-- Canonical URL -->
+<link rel="canonical" href={canonicalUrl ?? ogUrl} />
+
+<!-- Sitemap -->
+<link rel="sitemap" href="/sitemap.xml" />
+
+<!-- Open Graph -->
+<meta property="og:site_name" content="Log Book" />
+<meta property="og:title" content={title} />
+<meta property="og:description" content={finalDescription} />
+<meta property="og:type" content={ogType} />
+<meta property="og:url" content={ogUrl} />
+{ogImageUrl && <meta property="og:image" content={ogImageUrl} />}
+
+<!-- Twitter -->
+<meta name="twitter:card" content={ogImage ? 'summary_large_image' : 'summary'} />
+<meta name="twitter:title" content={title} />
+<meta name="twitter:description" content={finalDescription} />
+{ogImageUrl && <meta name="twitter:image" content={ogImageUrl} />}
