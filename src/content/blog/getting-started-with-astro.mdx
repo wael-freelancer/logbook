@@ -1,0 +1,30 @@
+---
+title: Getting Started with Astro
+description: A quick introduction to building content-driven websites with Astro.
+pubDate: 2025-12-15
+tags: ["astro", "web", "tutorial"]
+draft: false
+featured: true
+---
+
+## Why Astro?
+
+Astro is a web framework designed for content-rich websites. It ships zero JavaScript by default, only sending client-side JS for components that explicitly request it.
+
+### Key Concepts
+
+- **Islands Architecture**: Interactive components are isolated "islands" in a sea of static HTML
+- **Content Collections**: Type-safe Markdown/MDX with Zod schema validation
+- **View Transitions**: Smooth page transitions with the native View Transitions API
+
+```typescript
+// Example: Querying content collections
+import { getCollection } from 'astro:content';
+
+const posts = await getCollection('blog');
+const sorted = posts.sort((a, b) =>
+  b.data.pubDate.valueOf() - a.data.pubDate.valueOf()
+);
+```
+
+Astro's approach means your site is fast by default. No runtime overhead for pages that don't need it.

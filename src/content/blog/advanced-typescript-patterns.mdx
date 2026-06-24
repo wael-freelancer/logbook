@@ -1,0 +1,98 @@
+---
+title: Advanced TypeScript Patterns (#2)
+description: Exploring utility types, discriminated unions, and template literal types in TypeScript.
+pubDate: 2026-03-10
+tags: ["typescript", "patterns", "advanced"]
+draft: false
+featured: false
+---
+
+## Conditional Types with `infer`
+
+Conditional types check a type against a condition and select a branch. The `infer` keyword lets you extract and capture a subtype:
+
+```typescript
+type Unpack<T> = T extends Array<infer U> ? U : T;
+
+type A = Unpack<string[]>; // string
+type B = Unpack<Date>;      // Date
+
+type Return<T> = T extends (...args: any[]) => infer R ? R : never;
+
+type Fn = (x: number) => string;
+type R = Return<Fn>; // string
+```
+
+This powers most of the advanced utility types in the standard library.
+
+## Mapped Types with Key Remapping
+
+TypeScript 4.1+ lets you remap keys using the `as` clause in mapped types:
+
+```typescript
+type Getters<T> = {
+  [K in keyof T as `get${Capitalize<string & K>}`]: () => T[K];
+};
+
+interface Person {
+  name: string;
+  age: number;
+}
+
+type PersonGetters = Getters<Person>;
+// { getName: () => string; getAge: () => number; }
+
+type Methods<T> = {
+  [K in keyof T as T[K] extends Function ? K : never]: T[K];
+};
+```
+
+## Branded Types
+
+TypeScript uses structural typing, so `string` is always `string`. Branded types add a phantom discriminant to enforce nominal constraints:
+
+```typescript
+type Brand<T, B> = T & { __brand: B };
+
+type Email = Brand<string, 'Email'>;
+type UserId = Brand<string, 'UserId'>;
+
+function sendEmail(to: Email, body: string): void {}
+
+const id = 'abc123' as UserId;
+const addr = 'user@example.com' as Email;
+
+sendEmail(addr, 'hello'); // OK
+sendEmail(id, 'hello');   // Error — wrong brand
+```
+
+No runtime cost — the brand vanishes at compile time.
+
+## Variadic Tuple Types
+
+TypeScript 4.0+ supports labeled spread tuples for flexible function signatures:
+
+```typescript
+function concat<T extends unknown[], U extends unknown[]>(
+  a: [...T],
+  b: [...U]
+): [...T, ...U] {
+  return [...a, ...b];
+}
+
+const result = concat([1, 2], ['a', 'b']);
+//    ^? (string | number)[]
+
+function partialCall<T extends unknown[], U extends unknown[], R>(
+  fn: (...args: [...T, ...U]) => R,
+  ...head: [...T]
+): (...tail: [...U]) => R {
+  return (...tail) => fn(...head, ...tail);
+}
+
+const add = (a: number, b: number) => a + b;
+const add5 = partialCall(add, 5);
+add5(3); // 8
+```
+
+These patterns let you express higher-order function abstractions without losing type safety.

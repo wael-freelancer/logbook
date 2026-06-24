@@ -1,5 +1,6 @@
 ---
 // src/layouts/BlogPost.astro
+import Base from './Base.astro';
 
 interface Props {
   title: string;
@@ -29,8 +30,8 @@ const { title, description, headings } = Astro.props;
               <ul class="space-y-1 border-l border-border pl-4">
                 {headings.map((heading) => (
                   <li class={`text-text-secondary transition-colors hover:text-text ${heading.depth === 2 ? 'border-l-2' : ''}`}>
-                    <a 
-                      href={`#${heading.id}`} 
+                    <a
+                      href={`#${heading.id}`}
                       class="block py-1 text-sm leading-relaxed"
                     >
                       {heading.text}

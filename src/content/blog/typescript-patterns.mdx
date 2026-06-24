@@ -1,0 +1,81 @@
+---
+title: Advanced TypeScript Patterns
+description: Exploring utility types, discriminated unions, and template literal types in TypeScript.
+pubDate: 2026-03-10
+tags: ["typescript", "patterns", "advanced"]
+draft: false
+featured: false
+---
+
+## Utility Types
+
+TypeScript ships with several built-in utility types that model common transformations.
+
+### Partial
+
+Makes all properties optional:
+
+```typescript
+interface User {
+  name: string;
+  email: string;
+  age: number;
+}
+
+// All properties are now optional
+type PartialUser = Partial<User>;
+// Equivalent to:
+// { name?: string; email?: string; age?: number; }
+```
+
+### Pick and Omit
+
+Select or exclude specific keys:
+
+```typescript
+type UserContact = Pick<User, 'name' | 'email'>;
+type UserWithoutAge = Omit<User, 'age'>;
+```
+
+## Discriminated Unions
+
+A common pattern for modeling state machines:
+
+```typescript
+type ApiState<T> =
+  | { status: 'idle' }
+  | { status: 'loading' }
+  | { status: 'success'; data: T }
+  | { status: 'error'; error: Error };
+
+function handleState<T>(state: ApiState<T>): string {
+  switch (state.status) {
+    case 'idle':
+      return 'Waiting...';
+    case 'loading':
+      return 'Loading...';
+    case 'success':
+      return `Got ${state.data}`;
+    case 'error':
+      return `Error: ${state.error.message}`;
+  }
+}
+```
+
+## Template Literal Types
+
+TypeScript 5.x introduced powerful string manipulation types:
+
+```typescript
+type EventName = 'click' | 'focus' | 'blur';
+type HandlerName = `on${Capitalize<EventName>}`;
+// "onClick" | "onFocus" | "onBlur"
+
+type CssValue =
+  | `${number}px`
+  | `${number}rem`
+  | `${number}%`
+  | 'auto';
+```
+
+These patterns lead to more expressive and type-safe code with fewer runtime errors.

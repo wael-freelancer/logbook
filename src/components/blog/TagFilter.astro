@@ -1,0 +1,30 @@
+---
+interface Props {
+  tags: { name: string; count: number }[];
+  activeTag?: string;
+}
+
+const { tags, activeTag } = Astro.props;
+---
+
+<div class="flex flex-wrap gap-2">
+  <a
+    href="/blog"
+    class={`inline-flex items-center rounded-full px-3 py-1 text-sm font-medium transition-colors ${!activeTag ? 'bg-primary text-white' : 'bg-surface-2 text-text-secondary hover:bg-surface-3'}`}
+  >
+    All
+  </a>
+  {tags.map(({ name, count }) => {
+    const slug = name.toLowerCase().replace(/\s+/g, '-');
+    const isActive = activeTag === slug;
+    return (
+      <a
+        href={`/blog/tags/${slug}`}
+        class={`inline-flex items-center rounded-full px-3 py-1 text-sm font-medium transition-colors ${isActive ? 'bg-primary text-white' : 'bg-surface-2 text-text-secondary hover:bg-surface-3'}`}
+      >
+        {name}
+        <span class="ml-1.5 text-xs opacity-70">({count})</span>
+      </a>
+    );
+  })}
+</div>

@@ -1,0 +1,64 @@
+---
+title: Building Performant Websites
+description: A deep dive into web performance optimization techniques for modern static sites.
+pubDate: 2026-01-20
+tags: ["performance", "web", "optimization"]
+draft: false
+featured: true
+---
+
+## The Performance Budget
+
+Modern websites are bloated. The median page weight has grown from ~1MB in 2015 to over 2.5MB today. Setting a performance budget forces intentional decisions about what ships to the client.
+
+### Core Web Vitals
+
+Google's Core Web Vitals measure three aspects of user experience:
+
+| Metric | Good | Needs Work | Poor |
+|--------|------|------------|------|
+| LCP | < 2.5s | < 4.0s | > 4.0s |
+| FID/INP | < 100ms | < 300ms | > 300ms |
+| CLS | < 0.1 | < 0.25 | > 0.25 |
+
+### Image Optimization
+
+Images account for roughly 50% of page weight. Key strategies:
+
+1. **Responsive images**: Use `<picture>` with multiple `srcset` options
+2. **Modern formats**: WebP and AVX offer 25-35% better compression than JPEG
+3. **Lazy loading**: Native `loading="lazy"` for below-the-fold images
+
+```html
+<picture>
+  <source srcset="hero.avif" type="image/avif" />
+  <source srcset="hero.webp" type="image/webp" />
+  <img src="hero.jpg" alt="Hero image" loading="lazy" />
+</picture>
+```
+
+### Font Loading Strategies
+
+Self-hosted fonts with `font-display: swap` prevent invisible text during load. Preload critical fonts:
+
+```html
+<link rel="preload" href="/fonts/inter.woff2" as="font" type="font/woff2" crossorigin />
+```
+
+### Code Splitting
+
+Astro automatically code-splits by page. Framework components (React, Vue, Svelte) are only loaded when their island hydrates. This means:
+
+- A page without interactive components ships **zero JavaScript**
+- Each island is a separate bundle with its own hydration strategy
+- Third-party libraries are tree-shaken when unused
+
+## Measuring Performance
+
+Use these tools to measure real-world performance:
+
+- **Lighthouse**: Lab-based audit with actionable recommendations
+- **Web Vitals library**: JavaScript library for measuring real user metrics
+- **Vercel Analytics**: Real-user monitoring with Core Web Vitals tracking
+
+Performance is not a one-time optimization. It requires continuous monitoring and intentional decisions with every new feature.
