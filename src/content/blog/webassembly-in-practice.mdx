@@ -1,0 +1,147 @@
+---
+title: WebAssembly in Practice
+description: Exploring how WebAssembly enables near-native performance in browsers and its practical use cases for modern web development.
+pubDate: 2026-05-28
+tags: ["webassembly", "wasm", "performance"]
+draft: false
+featured: true
+---
+
+## What Is WebAssembly?
+
+WebAssembly (Wasm) is a binary instruction format designed as a portable compilation target for web browsers. It runs at near-native speed, bypassing the JavaScript engine's JIT compiler for compute-heavy tasks.
+
+### Why Not Just Use JavaScript?
+
+JavaScript engines use JIT compilation — they optimize code after running it multiple times. For CPU-intensive workloads (image processing, cryptography, game loops), this overhead matters:
+
+```javascript
+// JS: 100ms to process a large image
+const result = heavyImageProcessing(imageData);
+
+// Wasm: ~25ms for the same operation
+```
+
+## Getting Started with Rust and wasm-pack
+
+Rust compiles cleanly to WebAssembly. The `wasm-pack` toolchain handles bundling:
+
+```rust
+// src/lib.rs
+use wasm_bindgen::prelude::*;
+
+#[wasm_bindgen]
+pub fn fibonacci(n: u32) -> u32 {
+    match n {
+        0 => 1,
+        1 => 1,
+        _ => fibonacci(n - 1) + fibonacci(n - 2),
+    }
+}
+
+#[wasm_bindgen]
+pub fn process_image(data: &[u8], width: u32, height: u32) -> Vec<u8> {
+    // Image processing logic — runs at near-native speed
+    let mut output = vec![0; data.len()];
+    
+    for i in 0..data.len() {
+        output[i] = apply_filter(data[i]);
+    }
+    
+    output
+}
+
+fn apply_filter(pixel: u8) -> u8 {
+    // Simple brightness adjustment
+    (pixel as f32 * 1.5).min(255.0) as u8
+}
+```
+
+## Using Wasm in JavaScript
+
+The compiled module exports familiar JS functions:
+
+```javascript
+import init, { fibonacci, process_image } from './pkg/my_wasm_module.js';
+
+await init();
+
+// Compute-heavy operation
+const result = fibonacci(45); // Fast — no recursion overhead
+
+// Process image data
+const imageData = new Uint8Array(width * height * 4);
+const processed = process_image(imageData, width, height);
+```
+
+## Real-World Use Cases
+
+### Image and Video Processing
+
+Libraries like `ffmpeg.wasm` run video encoding in the browser:
+
+```javascript
+import FFmpeg from '@ffmpeg/ffmpeg';
+
+await ffmpeg.load();
+await ffmpeg.exec(['-i', 'input.mp4', '-vf', 'scale=640:360', 'output.mp4']);
+// Runs entirely in the browser — no server upload needed
+```
+
+### Cryptography
+
+WebAssembly-based crypto libraries outperform JavaScript equivalents:
+
+```rust
+#[wasm_bindgen]
+pub fn hash_data(data: &[u8]) -> Vec<u8> {
+    use sha2::Sha256;
+    use sha2::Digest;
+    
+    let mut hasher = Sha256::new();
+    hasher.update(data);
+    hasher.finalize().to_vec()
+}
+```
+
+### Game Development
+
+Game engines like Bevy compile to Wasm for browser-based games:
+
+```rust
+// A simple game loop in Rust → Wasm
+fn update_time(mut timer: ResMut<Timer>, delta: f32) {
+    *timer = timer.advance(delta);
+    
+    if timer.just_finished() {
+        // Game tick — physics, AI, rendering
+        process_game_state();
+    }
+}
+```
+
+## Performance Boundaries
+
+Wasm excels at compute-heavy tasks. It's not ideal for:
+
+- DOM manipulation (use JS + framework)
+- Network requests (fetch API is fine)
+- Simple UI logic (JS overhead is negligible here)
+
+The sweet spot: algorithms with tight loops, heavy math, or data processing that would otherwise block the main thread.
+
+## Interoperability
+
+Wasm and JavaScript share memory through `ArrayBuffer`:
+
+```javascript
+// Shared memory — no serialization needed
+const memory = new ArrayBuffer(1024);
+const wasmModule = await init(memory);
+
+// Pass typed arrays directly to Wasm functions
+const input = new Float32Array(wasmModule.memory.buffer, 0, 256);
+process_image(input); // Zero-copy data transfer
+```
+
+WebAssembly doesn't replace JavaScript. It complements it — handling the compute-heavy workloads while JS manages the UI and orchestration. Together, they enable web applications that rival native software in performance.

@@ -1,0 +1,237 @@
+---
+title: Internationalization and Localization
+description: Building multilingual web applications with proper date, number formatting, RTL support, and locale-aware sorting.
+pubDate: 2026-12-25
+tags: ["i18n", "localization", "internationalization"]
+draft: false
+featured: true
+---
+
+## Beyond Translation
+
+Internationalization (i18n) is more than swapping text strings. It involves date formats, number conventions, currency symbols, text direction, and cultural nuances that affect every part of your application.
+
+### i18n vs l10n
+
+- **i18n** (internationalization): Designing the app to support multiple locales
+- **l10n** (localization): Adapting the app for a specific locale
+
+## The Intl API
+
+JavaScript's built-in `Intl` object handles formatting natively:
+
+```javascript
+// Number formatting — locale-aware decimals, separators
+const us = new Intl.NumberFormat('en-US', { style: 'currency', currency: 'USD' });
+const de = new Intl.NumberFormat('de-DE', { style: 'currency', currency: 'EUR' });
+const jp = new Intl.NumberFormat('ja-JP', { style: 'currency', currency: 'JPY' });
+
+console.log(us.format(1234.56));  // "$1,234.56"
+console.log(de.format(1234.56));  // "1.234,56 €"
+console.log(jp.format(1234.56));  // "¥1,235"
+
+// Date formatting — respects locale conventions
+const date = new Date(2026, 5, 15);
+
+new Intl.DateTimeFormat('en-US').format(date);   // "6/15/2026"
+new Intl.DateTimeFormat('de-DE').format(date);    // "15.6.2026"
+new Intl.DateTimeFormat('ja-JP').format(date);    // "2026/6/15"
+
+// Pluralization — handles different language rules
+const count = 3;
+const pluralizer = new Intl.PluralRules('en', { style: 'short', unit: 'card' });
+pluralizer.select(count); // "one" or "other"
+
+// For more complex plurals (Arabic, Russian), use Intl.MessageFormat
+```
+
+## React i18next Integration
+
+The most popular library for React applications:
+
+```javascript
+import { initReactI18next } from 'react-i18next';
+import i18n from 'i18next';
+import resources from './locales/resources';
+
+i18n
+  .use(initReactI18next)
+  .init({
+    resources,
+    fallbackLng: 'en',
+    interpolation: {
+      escapeValue: false, // React already escapes
+    },
+  });
+
+// Locale files — src/locales/en.json
+{
+  "home": {
+    "title": "Welcome",
+    "description": "Hello {{name}}, you have {{count}} new messages.",
+    "items": {
+      "one": "{{count}} message",
+      "other": "{{count}} messages"
+    }
+  },
+  "nav": {
+    "dashboard": "Dashboard",
+    "settings": "Settings"
+  }
+}
+
+// Usage in components
+import { useTranslation } from 'react-i18next';
+
+function Home() {
+  const { t, i18n } = useTranslation();
+  
+  return (
+    <div>
+      <h1>{t('home.title')}</h1>
+      <p>{t('home.description', { name: 'Alice', count: 5 })}</p>
+      
+      {/* Dynamic locale switching */}
+      <select value={i18n.language} onChange={(e) => i18n.changeLanguage(e.target.value)}>
+        <option value="en">English</option>
+        <option value="de">Deutsch</option>
+        <option value="ja">日本語</option>
+      </select>
+    </div>
+  );
+}
+```
+
+## Detecting User Locale
+
+Automatically detect and respect the user's preferences:
+
+```javascript
+function getPreferredLocale(acceptedLanguages) {
+  // Browser sends Accept-Language header or navigator.language
+  const locales = acceptedLanguages || [navigator.language];
+  
+  // Match against supported locales
+  const supported = ['en', 'de', 'ja', 'es', 'fr'];
+  
+  for (const locale of locales) {
+    const match = supported.find(s => locale.startsWith(s));
+    if (match) return match;
+  }
+  
+  return 'en'; // Fallback
+}
+
+// In Next.js — get locale from Accept-Language header
+export async function GET(request) {
+  const locale = getPreferredLocale(
+    request.headers.get('accept-language')?.split(',')
+  );
+  
+  return Response.json({ locale });
+}
+```
+
+## Right-to-Left (RTL) Support
+
+Arabic, Hebrew, and Urdu read right-to-left. CSS logical properties handle this automatically:
+
+```css
+/* Use logical properties instead of directional ones */
+.card {
+  padding-inline-start: 1rem;    /* Instead of padding-left */
+  margin-inline-end: 0.5rem;     /* Instead of margin-right */
+  text-align: start;             /* Instead of text-align: left */
+}
+
+/* RTL-aware media queries */
+[dir="rtl"] .sidebar {
+  order: 1; /* Move sidebar to the right in RTL layouts */
+}
+
+[dir="rtl"] .arrow-icon {
+  transform: scaleX(-1); /* Flip arrows for RTL */
+}
+```
+
+## Locale-Aware Sorting and Searching
+
+String comparison varies by locale:
+
+```javascript
+// Sort names correctly per locale
+const names = ['Zoe', 'Alice', 'Anna', 'Åsa'];
+
+names.sort(new Intl.Collator('en').compare); // Alice, Anna, Åsa, Zoe
+names.sort(new Intl.Collator('sv').compare); // Åsa, Anna, Alice, Zoe (Swedish)
+
+// Case-insensitive search with locale awareness
+function searchItems(items, query, locale = 'en') {
+  const collator = new Intl.Collator(locale, { sensitivity: 'accent' });
+  
+  return items.filter(item =>
+    collator.compare(item.name.toLowerCase(), query.toLowerCase()) === 0
+  );
+}
+
+// Unicode normalization for consistent matching
+function normalizeText(text) {
+  return text.normalize('NFC'); // Canonical decomposition + composition
+}
+```
+
+## Currency and Number Formatting in Components
+
+```javascript
+import { useTranslation } from 'react-i18next';
+
+function Price({ amount, currency }) {
+  const { i18n } = useTranslation();
+  
+  const formatter = new Intl.NumberFormat(i18n.language, {
+    style: 'currency',
+    currency: currency,
+    minimumFractionDigits: 2,
+  });
+  
+  return <span>{formatter.format(amount)}</span>;
+}
+
+// Usage — automatically formats based on user's locale
+<Price amount={99.99} currency="USD" /> {/* "$99.99" for en-US */}
+<Price amount={99.99} currency="EUR" /> {/* "99,99 €" for de-DE */}
+```
+
+## Testing Multilingual UIs
+
+```javascript
+import { render, screen } from '@testing-library/react';
+import i18n from 'i18next';
+import { initReactI18next } from 'react-i18next';
+import Home from './Home';
+
+function setup(locale = 'en') {
+  i18n.use(initReactI18next).init({ locale });
+  render(<Home />);
+}
+
+test('renders German translation', () => {
+  setup('de');
+  expect(screen.getByText(/Willkommen/i)).toBeInTheDocument(); // "Welcome" in German
+});
+
+test('renders Japanese translation', () => {
+  setup('ja');
+  expect(screen.getByText(/ようこそ/i)).toBeInTheDocument(); // "Welcome" in Japanese
+});
+```
+
+## Best Practices
+
+- **Never concatenate translated strings** — use interpolation instead: `{{name}}` not `"Hello, " + name`
+- **Use CSS logical properties** for RTL compatibility
+- **Test with real locale data** — not just English translations
+- **Respect user preference** — don't force a locale based on IP address alone
+- **Handle pluralization rules** — many languages have more than one plural form
+
+Internationalization is a feature, not an afterthought. By using native APIs and proper libraries from the start, you build applications that work for users everywhere without retrofitting later.

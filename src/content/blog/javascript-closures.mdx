@@ -1,0 +1,153 @@
+---
+title: Understanding JavaScript Closures
+description: A deep dive into closures, scope chains, and how they power functional programming patterns in JavaScript.
+pubDate: 2026-04-18
+tags: ["javascript", "closures", "functional"]
+draft: false
+featured: true
+---
+
+## What Is a Closure?
+
+A closure is a function that retains access to its lexical scope — the environment where it was created — even after that scope has closed. Every inner function is a closure.
+
+```javascript
+function createCounter() {
+  let count = 0;
+  
+  return {
+    increment: () => ++count,
+    decrement: () => --count,
+    getCount: () => count
+  };
+}
+
+const counter = createCounter();
+counter.increment(); // 1
+counter.decrement(); // 0
+```
+
+The inner functions close over `count`, keeping it alive long after `createCounter` returns.
+
+## The Scope Chain
+
+JavaScript resolves variables through a chain of scopes:
+
+1. **Local scope**: Variables declared in the current function
+2. **Outer scopes**: Any enclosing function scopes
+3. **Global scope**: Variables available everywhere
+
+```javascript
+const globalVar = 'global';
+
+function outer() {
+  const outerVar = 'outer';
+  
+  function inner() {
+    const innerVar = 'inner';
+    console.log(innerVar);   // local
+    console.log(outerVar);   // from outer scope
+    console.log(globalVar);  // from global scope
+  }
+  
+  return inner;
+}
+
+const fn = outer();
+fn(); // Resolves all three variables through the chain
+```
+
+## Practical Closure Patterns
+
+### Module Pattern
+
+Encapsulate private state behind a public API:
+
+```javascript
+const EventBus = (() => {
+  const events = new Map();
+  
+  return {
+    on(event, fn) {
+      if (!events.has(event)) events.set(event, []);
+      events.get(event).push(fn);
+    },
+    emit(event, ...args) {
+      events.get(event)?.forEach(fn => fn(...args));
+    }
+  };
+})();
+```
+
+### Memoization
+
+Cache expensive computations:
+
+```javascript
+function memoize(fn) {
+  const cache = new Map();
+  
+  return function (...args) {
+    const key = JSON.stringify(args);
+    if (cache.has(key)) return cache.get(key);
+    
+    const result = fn(...args);
+    cache.set(key, result);
+    return result;
+  };
+}
+
+const fibonacci = memoize((n) => n <= 1 ? n : fibonacci(n - 1) + fibonacci(n - 2));
+```
+
+### Currying and Partial Application
+
+Build reusable functions by closing over arguments:
+
+```javascript
+function curry(fn, ...args) {
+  return (...moreArgs) => {
+    const all = [...args, ...moreArgs];
+    if (all.length >= fn.length) return fn(...all);
+    return curry(fn, ...all);
+  };
+}
+
+const add = (a, b) => a + b;
+const add5 = curry(add, 5); // closes over `a = 5`
+add5(10); // 15
+```
+
+## Common Pitfalls
+
+### Loop Variable Capture
+
+In older JavaScript, closures in loops captured the same variable:
+
+```javascript
+for (var i = 0; i < 3; i++) {
+  setTimeout(() => console.log(i), 0); // 3, 3, 3
+}
+
+// Fix with let — each iteration creates a new scope
+for (let i = 0; i < 3; i++) {
+  setTimeout(() => console.log(i), 0); // 0, 1, 2
+}
+```
+
+### Memory Leaks
+
+Closures keep references alive. Long-running applications must be mindful of retained state:
+
+```javascript
+// This closure keeps `largeData` alive indefinitely
+function processData() {
+  const largeData = new Array(10000).fill('some data');
+  
+  return () => {
+    console.log(largeData.length); // largeData never garbage-collected
+  };
+}
+```
+
+Closures are fundamental to JavaScript. They enable encapsulation, functional patterns, and the event-driven architecture that powers modern web applications.

@@ -1,0 +1,249 @@
+---
+title: Progressive Web Apps Complete Guide
+description: Transforming web applications into installable, offline-first experiences with service workers and web app manifests.
+pubDate: 2026-08-25
+tags: ["pwa", "service-workers", "offline"]
+draft: false
+featured: true
+---
+
+## What Makes an App Progressive?
+
+Progressive Web Apps combine the best of web and native apps. They're installable, work offline, send push notifications, and feel as fast as native applications — all without app store distribution.
+
+### The PWA Checklist
+
+- **Installable**: Add to home screen with a web manifest
+- **Offline-first**: Service worker caches critical resources
+- **Responsive**: Works on any device size
+- **Fast**: Loads instantly even on slow networks
+- **Secure**: Served over HTTPS only
+
+## Web App Manifest
+
+The manifest tells browsers how to install your app:
+
+```json
+{
+  "name": "My Progressive App",
+  "short_name": "MyApp",
+  "description": "A progressive web application that works offline.",
+  "start_url": "/",
+  "display": "standalone",
+  "background_color": "#ffffff",
+  "theme_color": "#0ea5e9",
+  "icons": [
+    {
+      "src": "/icons/icon-192.png",
+      "sizes": "192x192",
+      "type": "image/png"
+    },
+    {
+      "src": "/icons/icon-512.png",
+      "sizes": "512x512",
+      "type": "image/png"
+    }
+  ],
+  "shortcuts": [
+    {
+      "name": "Dashboard",
+      "url": "/dashboard",
+      "description": "View your dashboard"
+    }
+  ]
+}
+```
+
+Link it in HTML:
+
+```html
+<head>
+  <link rel="manifest" href="/manifest.json" />
+  <meta name="theme-color" content="#0ea5e9" />
+  <meta name="apple-mobile-web-app-capable" content="yes" />
+</head>
+```
+
+## Service Worker Lifecycle
+
+The service worker is the backbone of offline functionality:
+
+```javascript
+// sw.js
+const CACHE_NAME = 'app-v1';
+const ASSETS_TO_CACHE = [
+  '/',
+  '/index.html',
+  '/styles.css',
+  '/icons/icon-192.png',
+  '/icons/icon-512.png'
+];
+
+// Install: Cache critical assets
+self.addEventListener('install', (event) => {
+  event.waitUntil(
+    caches.open(CACHE_NAME).then((cache) => cache.addAll(ASSETS_TO_CACHE))
+  );
+  
+  // Activate immediately — skip waiting for next tab load
+  self.skipWaiting();
+});
+
+// Activate: Clean up old caches
+self.addEventListener('activate', (event) => {
+  event.waitUntil(
+    caches.keys().then((keys) =>
+      Promise.all(keys.filter(k => k !== CACHE_NAME).map(k => caches.delete(k)))
+    )
+  );
+  
+  // Take control of all clients immediately
+  self.clients.claim();
+});
+
+// Fetch: Cache-first strategy for assets, network-first for API
+self.addEventListener('fetch', (event) => {
+  const url = new URL(event.request.url);
+  
+  if (url.pathname.startsWith('/api/')) {
+    // Network-first for API calls
+    event.respondWith(networkFirst(event.request));
+  } else {
+    // Cache-first for static assets
+    event.respondWith(cacheFirst(event.request));
+  }
+});
+
+async function cacheFirst(request) {
+  const cached = await caches.match(request);
+  if (cached) return cached;
+  
+  try {
+    const response = await fetch(request);
+    const cache = await caches.open(CACHE_NAME);
+    cache.put(request, response.clone());
+    return response;
+  } catch {
+    // Fallback for offline users
+    return new Response('Offline', { status: 503 });
+  }
+}
+
+async function networkFirst(request) {
+  try {
+    const response = await fetch(request);
+    return response;
+  } catch {
+    const cached = await caches.match(request);
+    if (cached) return cached;
+    throw new Error('Network and cache both failed');
+  }
+}
+```
+
+## Register the Service Worker
+
+```javascript
+// src/serviceWorkerRegistration.js
+if ('serviceWorker' in navigator) {
+  window.addEventListener('load', async () => {
+    const registration = await navigator.serviceWorker.register('/sw.js');
+    
+    // Notify user of updates
+    registration.addEventListener('updatefound', () => {
+      const newWorker = registration.installing;
+      
+      newWorker.addEventListener('statechange', async () => {
+        if (newWorker.state === 'activated') {
+          // New content available — prompt refresh
+          const confirmed = confirm('New version available. Reload?');
+          if (confirmed) location.reload();
+        }
+      });
+    });
+  });
+}
+```
+
+## Background Sync
+
+Queue actions for when the network returns:
+
+```javascript
+// In your app code
+async function queueMessage(message) {
+  const registration = await navigator.serviceWorker.ready;
+  
+  await registration.sync.register('send-messages', {
+    tag: 'msg-' + Date.now(),
+    maxBackoffSeconds: 90 * 60, // 90 minutes
+  });
+}
+
+// In service worker
+self.addEventListener('sync', (event) => {
+  if (event.tag === 'send-messages') {
+    event.waitUntil(syncMessages());
+  }
+});
+
+async function syncMessages() {
+  const queue = await openQueue();
+  
+  for (const message of queue) {
+    await fetch('/api/messages', {
+      method: 'POST',
+      body: JSON.stringify(message),
+    });
+  }
+}
+```
+
+## Push Notifications
+
+Engage users with system-level notifications:
+
+```javascript
+// Request permission
+async function requestNotificationPermission() {
+  const result = await Notification.requestPermission();
+  
+  if (result === 'granted') {
+    console.log('Notifications enabled');
+  }
+}
+
+// Subscribe to push
+async function subscribeToPush() {
+  const registration = await navigator.serviceWorker.ready;
+  
+  return registration.pushManager.subscribe({
+    userVisibleOnly: true,
+    applicationServerKey: urlB64ToUint8Array(
+      'YOUR_PUBLIC_KEY_HERE'
+    ),
+  });
+}
+
+// Handle push in service worker
+self.addEventListener('push', (event) => {
+  const data = event.data?.json();
+  
+  self.registration.showNotification({
+    title: data.title,
+    body: data.body,
+    icon: '/icons/icon-192.png',
+    badge: '/icons/badge.png',
+  });
+});
+```
+
+## Testing Your PWA
+
+Use Chrome DevTools to simulate offline conditions:
+
+1. Open **Application** tab → Service Workers → check "Offline"
+2. Use **Network** throttling (Slow 3G) for realistic testing
+3. Run Lighthouse audit — it includes a full PWA checklist
+
+Progressive Web Apps blur the line between web and native. Users get an installable app that works offline, sends notifications, and loads instantly — all from a single URL. No app store required.

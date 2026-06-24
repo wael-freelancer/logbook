@@ -1,0 +1,139 @@
+---
+title: Mastering CSS Grid Layout
+description: A comprehensive guide to building complex layouts with CSS Grid, from basics to advanced patterns.
+pubDate: 2026-04-05
+tags: ["css", "grid", "layout"]
+draft: false
+featured: true
+---
+
+## The Grid Foundation
+
+CSS Grid is the most powerful layout system in CSS. Unlike Flexbox which works in one dimension, Grid handles two dimensions simultaneously — rows and columns — making it ideal for complex page structures.
+
+### Grid Container vs Items
+
+```css
+.container {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  grid-template-rows: auto 1fr auto;
+  gap: 1rem;
+}
+
+.item {
+  grid-column: span 2;
+  grid-row-start: 2;
+}
+```
+
+The container defines the grid structure. Items are placed within it using explicit positioning or automatic placement algorithms.
+
+## Implicit vs Explicit Grids
+
+Explicit grids are defined with `grid-template-columns` and `grid-template-rows`. The implicit grid handles content that overflows these tracks:
+
+```css
+.container {
+  display: grid;
+  grid-template-columns: repeat(4, 200px);
+  /* Only defines 4 columns */
+}
+
+/* Items placed beyond column 4 go into the implicit grid */
+.item-overflow {
+  grid-column: 5 / 7;
+}
+```
+
+## Named Grid Areas
+
+Named areas make layouts readable and maintainable:
+
+```css
+.layout {
+  display: grid;
+  grid-template-areas:
+    "header header header"
+    "sidebar main nav"
+    "footer footer footer";
+  gap: 1rem;
+}
+
+.header { grid-area: header; }
+.sidebar { grid-area: sidebar; }
+.main { grid-area: main; }
+.nav { grid-area: nav; }
+.footer { grid-area: footer; }
+```
+
+## Responsive Grids Without Media Queries
+
+`auto-fit` and `auto-fill` create responsive grids that adapt to available space:
+
+```css
+.cards {
+  display: grid;
+  /* Creates as many columns as fit, each at least 250px */
+  grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+  gap: 1.5rem;
+}
+```
+
+- **`auto-fill`**: Fills available space with empty tracks
+- **`auto-fit`**: Expands existing items to fill space (no empty tracks)
+
+## Subgrid
+
+Subgrid inherits the parent's grid lines, enabling alignment across nested components:
+
+```css
+.card-list {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+}
+
+.card {
+  display: subgrid;
+  /* Aligns with parent columns */
+  align-items: stretch;
+}
+
+.card-body {
+  grid-column: 1 / -1;
+}
+```
+
+## Practical Patterns
+
+### Holy Grail Layout
+
+```css
+.holy-grail {
+  display: grid;
+  grid-template-columns: 250px 1fr 250px;
+  grid-template-rows: auto 1fr auto;
+  min-height: 100vh;
+}
+
+.header { grid-column: 1 / -1; }
+.sidebar-left { grid-row: 2; }
+.main-content { grid-row: 2; }
+.sidebar-right { grid-row: 2; }
+.footer { grid-column: 1 / -1; }
+```
+
+### Masonry-Like Layout
+
+```css
+.masonry {
+  display: grid;
+  gap: 1rem;
+  grid-auto-flow: dense;
+}
+
+.tall { grid-row: span 2; }
+.short { grid-row: span 1; }
+```
+
+Grid handles layouts that previously required JavaScript libraries. Combined with CSS custom properties, it becomes a fully dynamic layout system.

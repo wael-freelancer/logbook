@@ -1,0 +1,306 @@
+---
+title: Edge Functions and Serverless Runtimes
+description: Running code closer to users with edge functions, serverless platforms, and global CDN-based computation.
+pubDate: 2027-01-25
+tags: ["edge-computing", "serverless", "cdn"]
+draft: false
+featured: true
+---
+
+## Why Edge Computing?
+
+Traditional serverless runs on centralized regions — your function might be thousands of miles from the user. Edge functions deploy code to CDN nodes worldwide, reducing latency by running computation at the geographic edge.
+
+### Latency Comparison
+
+| Location | Traditional Server | Edge Function |
+|----------|-------------------|---------------|
+| US East → US West | ~50ms | ~10ms |
+| US East → Europe | ~120ms | ~30ms |
+| Asia → Asia | ~80ms | ~15ms |
+
+## Edge Function Patterns
+
+### Geo-Routing
+
+Serve localized content based on the user's location:
+
+```javascript
+// @astrojs/edge edge function
+export default async function handler(request, context) {
+  const { geo } = context;
+  
+  // Serve language-specific content
+  const lang = geo?.country?.toLowerCase() || 'en';
+  
+  const response = await fetch(`https://api.example.com/content?lang=${lang}`);
+  const data = await response.json();
+  
+  return new Response(JSON.stringify(data), {
+    headers: {
+      'Content-Type': 'application/json',
+      'Cache-Control': 'public, max-age=3600',
+    },
+  });
+}
+
+// In Astro config
+export default defineConfig({
+  edge: {
+    runtime: 'astro',
+  },
+});
+```
+
+### Request Transformation at the Edge
+
+Modify requests and responses before they reach your origin:
+
+```javascript
+import { getCookie } from 'hono/cookie';
+
+export async function onRequest(context) {
+  const request = context.request;
+  
+  // Check if user has a session cookie
+  const sessionId = getCookie(context.env, 'session_id');
+  
+  if (!sessionId) {
+    // Redirect to auth — served from edge, no origin round-trip
+    return Response.redirect('https://auth.example.com/login', 302);
+  }
+  
+  // Pass through — add headers for origin tracking
+  const newRequest = new Request(request.url, request);
+  newRequest.headers.set('x-session-id', sessionId);
+  
+  return context.runWithEdgeContext(newRequest);
+}
+
+// Response transformation — modify before caching
+export async function onRequestResponse({ request, response }) {
+  // Strip cache-control headers for CDN optimization
+  const headers = new Headers(response.headers);
+  headers.set('CDN-Cache-Control', 'public, max-age=3600');
+  
+  return new Response(response.body, {
+    status: response.status,
+    headers,
+  });
+}
+```
+
+## Cloudflare Workers
+
+The most mature edge runtime with a global network:
+
+```javascript
+// worker.js — deployed to 300+ cities worldwide
+export default {
+  async fetch(request, env, ctx) {
+    const url = new URL(request.url);
+    
+    // Route-based handling
+    if (url.pathname.startsWith('/api/')) {
+      return handleApi(request, env);
+    }
+    
+    if (url.pathname === '/health') {
+      return new Response('OK', { status: 200 });
+    }
+    
+    // Serve static assets from KV storage
+    const asset = await env.ASSETS.fetch(url);
+    return asset;
+  },
+};
+
+async function handleApi(request, env) {
+  // Use D1 (SQLite) for edge-compatible database
+  const db = env.D1;
+  const result = await db.prepare('SELECT * FROM users WHERE id = ?').bind('42').all();
+  
+  return new Response(JSON.stringify(result), {
+    headers: { 'content-type': 'application/json' },
+  });
+}
+
+// Bind secrets and services at deploy time
+```
+
+### Wrangler Configuration
+
+```toml
+# wrangler.toml
+name = "my-edge-app"
+main = "worker.js"
+compatibility_date = "2026-01-01"
+
+# Edge database (D1)
+[[d1_databases]]
+binding = "D1"
+database_name = "production-db"
+
+# Key-value storage for edge caching
+kv_namespaces = [
+  { binding = "CACHE", id = "abc123" }
+]
+
+# Bind other services
+services = [
+  { binding = "ORIGIN", service = "origin-service" }
+]
+```
+
+## Next.js Edge Middleware
+
+Run middleware on the edge with Next.js:
+
+```typescript
+// src/middleware.ts
+import { NextResponse } from 'next/server';
+import type { NextRequest } from 'next/server';
+
+export function middleware(request: NextRequest) {
+  const { pathname } = request.nextUrl;
+  
+  // Geo-based routing
+  const country = request.geo?.country || 'US';
+  
+  if (country === 'CN' && !pathname.startsWith('/cn/')) {
+    return NextResponse.redirect(new URL('/cn', request.url));
+  }
+  
+  // A/B testing at the edge
+  const variant = request.cookies.get('ab_test')?.value;
+  
+  if (!variant) {
+    const newVariant = Math.random() > 0.5 ? 'A' : 'B';
+    const response = NextResponse.next();
+    
+    response.cookies.set({
+      name: 'ab_test',
+      value: newVariant,
+      httpOnly: true,
+      path: '/',
+    });
+    
+    return response;
+  }
+  
+  // Rate limiting at the edge (using KV)
+  const ip = request.ip || '127.0.0.1';
+  const key = `rate:${ip}`;
+  
+  const count = await request.env.KV.get(key);
+  
+  if (parseInt(count || '0') > 100) {
+    return NextResponse.json({ error: 'Too many requests' }, { status: 429 });
+  }
+  
+  await request.env.KV.set(key, String(parseInt(count || '0') + 1), {
+    expirationTtl: 60, // Reset after 60 seconds
+  });
+}
+
+export const config = {
+  runtime: 'edge', // Runs on Edge Runtime
+  regions: ['iad1', 'cdg1', 'nrt1'], // Deploy to specific regions
+};
+```
+
+## Vercel Edge Functions
+
+Deploy edge functions with Vercel's platform:
+
+```javascript
+// pages/api/geo-redirect.js
+import { getCookie } from 'universal-cookie';
+
+export const config = {
+  runtime: 'edge',
+};
+
+export default async function handler(req, ctx) {
+  // ctx contains geo information at the edge
+  const country = ctx.geo?.country;
+  
+  if (!country) return Response.json({ error: 'Unknown location' });
+  
+  // Serve region-specific API response
+  const locale = getLocaleForCountry(country);
+  
+  const res = await fetch(`https://api.example.com/content?locale=${locale}`);
+  const data = await res.json();
+  
+  return new Response(JSON.stringify(data), {
+    headers: {
+      'Content-Type': 'application/json',
+      'Cache-Control': 'public, s-maxage=3600, stale-while-revalidate=86400',
+    },
+  });
+}
+
+function getLocaleForCountry(country) {
+  const mapping = {
+    US: 'en-US',
+    GB: 'en-GB',
+    DE: 'de-DE',
+    JP: 'ja-JP',
+    FR: 'fr-FR',
+  };
+  
+  return mapping[country] || 'en-US';
+}
+```
+
+## Caching Strategies at the Edge
+
+Cache responses close to users, invalidate from your origin:
+
+```javascript
+// Edge cache with stale-while-revalidate pattern
+export async function fetchWithEdgeCache(request) {
+  const cache = caches.default;
+  
+  // Check edge cache first (fastest)
+  let cached = await cache.match(request);
+  if (cached) return cached;
+  
+  // Fetch from origin (slower, but fresh)
+  cached = await fetch(request);
+  
+  // Cache for 1 hour, allow stale response for 24 hours while revalidating
+  const response = new Response(cached.body, cached);
+  response.headers.set(
+    'Cache-Control',
+    `public, max-age=3600, stale-while-revalidate=86400`
+  );
+  
+  await cache.put(request, response.clone());
+  return response;
+}
+
+// Cache invalidation — purge when content changes
+async function invalidateCache(path) {
+  const url = new URL(path, 'https://cdn.example.com');
+  
+  // Purge from CDN edge nodes globally
+  await fetch(`https://api.example.com/purge`, {
+    method: 'POST',
+    headers: { 'Authorization': `Bearer ${process.env.PURGE_KEY}` },
+    body: JSON.stringify({ url: url.toString() }),
+  });
+}
+```
+
+## When to Use Edge vs Serverless
+
+| Use Case | Edge | Traditional Serverless |
+|----------|------|----------------------|
+| Geo-routing | Excellent | Poor (single region) |
+| Heavy computation | Limited RAM/CPU | Better for CPU-intensive tasks |
+| Database queries | Edge databases available | Full database access |
+| Cold starts | Near-zero | Can have 10-30s cold start |
+
+Edge functions excel at routing, caching, and lightweight computation. For heavy processing or complex business logic, traditional serverless remains the better choice. The best architectures use both — edge for speed, serverless for depth.

@@ -1,0 +1,159 @@
+---
+title: Designing Scalable APIs with GraphQL
+description: A practical guide to building type-safe, efficient APIs using GraphQL schema design and resolver patterns.
+pubDate: 2026-06-10
+tags: ["graphql", "api", "architecture"]
+draft: false
+featured: true
+---
+
+## Why GraphQL?
+
+REST APIs often require multiple endpoints for related data or return over-fetching responses. GraphQL solves both with a single endpoint and a query language that matches your data shape.
+
+### REST vs GraphQL
+
+```bash
+# REST: Multiple requests, fixed response shapes
+GET /api/users/1          → { id, name, email }
+GET /api/users/1/posts    → [posts]
+GET /api/users/1/friends  → [friends]
+
+# GraphQL: Single request, precise data shape
+query {
+  user(id: "1") {
+    name
+    posts { title }
+    friends { name }
+  }
+}
+```
+
+## Schema Design
+
+The schema is the contract between client and server. Define it with SDL (Schema Definition Language):
+
+```graphql
+type Query {
+  user(id: ID!): User
+  users(limit: Int = 20, offset: Int = 0): [User!]!
+  post(id: ID!): Post
+}
+
+type Mutation {
+  createUser(name: String!, email: String!): User!
+  updatePost(id: ID!, title: String!, content: String!): Post!
+  deletePost(id: ID!): Boolean!
+}
+
+type User {
+  id: ID!
+  name: String!
+  email: String!
+  posts: [Post!]!
+  createdAt: DateTime!
+}
+
+type Post {
+  id: ID!
+  title: String!
+  content: String!
+  author: User!
+  comments: [Comment!]!
+  publishedAt: DateTime!
+}
+
+type Comment {
+  id: ID!
+  text: String!
+  createdAt: DateTime!
+}
+
+scalar DateTime
+```
+
+## Resolvers
+
+Resolvers map queries to data sources. Use the `dataLoader` pattern to avoid N+1 queries:
+
+```javascript
+import DataLoader from 'dataloader';
+
+// Batch loading — one query for multiple requests
+function createLoaders() {
+  const userLoader = new DataLoader(async (userIds) => {
+    const users = await db.users.findMany({
+      where: { id: { $in: userIds } }
+    });
+    
+    // Group results by ID to match input order
+    return userIds.map(id => {
+      const user = users.find(u => u.id === id);
+      return user || null;
+    });
+  });
+  
+  return { userLoader };
+}
+
+const resolvers = {
+  Query: {
+    user(_, { id }, { loaders }) {
+      return loaders.userLoader.load(id);
+    }
+  },
+  
+  User: {
+    posts(user) {
+      // DataLoader handles batching across nested fields
+      return db.posts.findMany({ where: { authorId: user.id } });
+    }
+  }
+};
+```
+
+## Nested Queries and Depth Limits
+
+Unbounded nested queries can be abused. Set depth limits to protect your server:
+
+```javascript
+import { validateDepth } from 'graphql-depth-limit';
+
+const schema = makeExecutableSchema({ typeDefs, resolvers });
+
+app.use('/graphql', graphqlHTTP((req) => ({
+  schema,
+  validationRules: [validateDepth(3)], // Max nesting depth
+  graphiql: true,
+})));
+```
+
+## Caching with DataLoader
+
+Cache resolved data to avoid redundant database calls:
+
+```javascript
+const userLoader = new DataLoader(async (userIds) => {
+  const users = await db.users.findMany({
+    where: { id: { $in: userIds } }
+  });
+  
+  return userIds.map(id => {
+    const user = users.find(u => u.id === id);
+    return user || null;
+  });
+}, {
+  // Cache for 5 seconds, keyed by userId
+  cacheKey: (id) => `user:${id}`,
+});
+```
+
+## Best Practices
+
+- **Use fragments** to share field selections across queries
+- **Implement pagination** with cursor-based or relay-style patterns
+- **Add introspection** during development (`__schema`, `__type`)
+- **Set request limits** (max query complexity, max field count)
+- **Version carefully** — GraphQL's schema evolution is backward-compatible
+
+GraphQL shifts API design from "what endpoints exist" to "what data can be queried." The type system catches errors at compile time, and clients request exactly what they need.

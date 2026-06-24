@@ -1,0 +1,311 @@
+---
+title: Microservices Architecture Patterns
+description: Practical patterns for building, communicating, and monitoring distributed systems using microservices.
+pubDate: 2026-12-10
+tags: ["microservices", "architecture", "distributed-systems"]
+draft: false
+featured: true
+---
+
+## When Microservices Make Sense
+
+Microservices aren't a silver bullet. They add complexity — network latency, distributed tracing, data consistency challenges. Use them when you need independent scaling, team autonomy, or technology diversity. Avoid them for simple applications where a monolith would suffice.
+
+### Monolith vs Microservices
+
+| Aspect | Monolith | Microservices |
+|--------|----------|---------------|
+| Development | Single codebase | Multiple repos, teams |
+| Deployment | One deploy | Independent deploys |
+| Data | Shared database | Database per service |
+| Communication | In-process calls | HTTP/gRPC over network |
+| Scaling | Scale everything together | Scale individual services |
+
+## Service Communication Patterns
+
+### Synchronous: REST and gRPC
+
+```javascript
+// API Gateway → User Service (REST)
+async function getUserProfile(userId) {
+  const response = await fetch('http://user-service:3001/api/users/' + userId);
+  
+  if (!response.ok) throw new Error(`User service error: ${response.status}`);
+  
+  return response.json();
+}
+
+// Service-to-Service (gRPC — faster, typed)
+const grpc = require('@grpc/grpc-js');
+const protoLoader = require('@grpc/proto-loader');
+
+const packageDef = await protoLoader.load('services.proto', {
+  keepCase: true,
+  longs: String,
+  enums: String,
+});
+
+const serviceProto = grpc.loadPackageDefinition(packageDef);
+const userServiceClient = new serviceProto.UserService(
+  'user-service:50051',
+  grpc.credentials.createInsecure()
+);
+
+// gRPC call — strongly typed, binary protocol
+const profile = await new Promise((resolve, reject) => {
+  userServiceClient.GetProfile({ userId }, (err, response) => {
+    if (err) reject(err);
+    else resolve(response);
+  });
+});
+```
+
+### Asynchronous: Event-Driven Communication
+
+Use message brokers for decoupled communication:
+
+```javascript
+// Producer — publish events without knowing consumers
+import { RabbitMQClient } from '@nestjs/microservices';
+
+const client = new RabbitMQClient();
+
+async function orderPlaced(order) {
+  // Publish event — no need to know which services care
+  await client.send('order.placed', order);
+}
+
+// Consumer — subscribe to events they care about
+import { EventPattern } from '@nestjs/microservices';
+
+export class InventoryService {
+  @EventPattern('order.placed')
+  async handleOrderPlaced(order) {
+    // Decrement inventory — no direct coupling to OrderService
+    await this.updateStock(order.items);
+    
+    // Publish another event (chain reaction)
+    await this.eventEmitter.emit('inventory.updated', order);
+  }
+}
+```
+
+## API Gateway Pattern
+
+A single entry point routes requests to the right service:
+
+```javascript
+// gateway/server.js
+import { createServer } from 'http';
+import express from 'express';
+
+const app = express();
+const proxy = require('http-proxy-middleware');
+
+app.use('/api/users', proxy({ target: 'http://user-service:3001' }));
+app.use('/api/orders', proxy({ target: 'http://order-service:3002' }));
+app.use('/api/products', proxy({ target: 'product-service:3003' }));
+
+// Add authentication, rate limiting, logging at the gateway level
+app.use((req, res, next) => {
+  const start = Date.now();
+  
+  res.on('finish', () => {
+    console.log(`${req.method} ${req.path} ${res.statusCode} - ${Date.now() - start}ms`);
+  });
+  
+  next();
+});
+
+createServer(app).listen(3000);
+```
+
+## Distributed Tracing
+
+Track requests across services with trace IDs:
+
+```javascript
+// Propagate trace ID through the request chain
+function traceMiddleware(req, res, next) {
+  const traceId = req.headers['x-trace-id'] || generateTraceId();
+  
+  // Attach to outgoing requests
+  req.traceContext = {
+    traceId,
+    spanId: generateSpanId(),
+  };
+  
+  // Pass trace ID to downstream services
+  req.getFetchOptions = () => ({
+    headers: { 'x-trace-id': traceId },
+  });
+  
+  next();
+}
+
+// In a service — forward the trace ID
+async function fetchUserProfile(userId) {
+  const response = await fetch('http://user-service/api/users/' + userId, {
+    headers: {
+      'x-trace-id': req.traceContext.traceId, // Forward from original request
+    },
+  });
+  
+  return response.json();
+}
+
+// Trace ID format: UUID for distributed correlation
+function generateTraceId() {
+  return crypto.randomUUID();
+}
+
+function generateSpanId() {
+  return crypto.randomBytes(8).toString('hex');
+}
+```
+
+## Circuit Breaker Pattern
+
+Prevent cascading failures when a service is slow or down:
+
+```javascript
+class CircuitBreaker {
+  constructor(failuresThreshold = 5, recoveryTimeout = 30000) {
+    this.failuresThreshold = failuresThreshold;
+    this.recoveryTimeout = recoveryTimeout;
+    
+    this.state = 'closed'; // closed → open → half-open
+    this.failures = 0;
+    this.lastFailure = null;
+  }
+  
+  async call(fn) {
+    if (this.state === 'open') {
+      const elapsed = Date.now() - this.lastFailure;
+      
+      if (elapsed < this.recoveryTimeout) {
+        throw new Error('Circuit breaker open — service unavailable');
+      }
+      
+      this.state = 'half-open'; // Allow one test request
+    }
+    
+    try {
+      const result = await fn();
+      
+      if (this.state === 'half-open') {
+        this.state = 'closed'; // Service recovered
+      }
+      
+      return result;
+    } catch (err) {
+      this.failures++;
+      this.lastFailure = Date.now();
+      
+      if (this.failures >= this.failuresThreshold) {
+        this.state = 'open'; // Trip the breaker
+      }
+      
+      throw err;
+    }
+  }
+}
+
+// Usage — wrap service calls with circuit protection
+const userServiceBreaker = new CircuitBreaker(5, 30000);
+
+async function getUser(userId) {
+  return userServiceBreaker.call(() => fetchUserFromService(userId));
+}
+```
+
+## Data Consistency
+
+In microservices, each service owns its data. Use eventual consistency patterns:
+
+```javascript
+// Saga pattern — coordinate distributed transactions
+class OrderSaga {
+  async execute(orderData) {
+    let steps = [];
+    
+    try {
+      // Step 1: Create order (compensable)
+      const order = await this.createOrder(orderData);
+      steps.push({ action: 'create-order', id: order.id });
+      
+      // Step 2: Process payment (compensable)
+      await this.processPayment(order.id, orderData.amount);
+      steps.push({ action: 'process-payment', orderId: order.id });
+      
+      // Step 3: Update inventory (compensable)
+      await this.updateInventory(orderData.items);
+      steps.push({ action: 'update-inventory' });
+      
+    } catch (err) {
+      // Compensate — undo what was done, in reverse order
+      for (let i = steps.length - 1; i >= 0; i--) {
+        const step = steps[i];
+        await this.compensate(step);
+      }
+      
+      throw err;
+    }
+  }
+  
+  async compensate({ action, id }) {
+    switch (action) {
+      case 'update-inventory':
+        return this.restoreInventory();
+      case 'process-payment':
+        return this.refundPayment(id);
+      case 'create-order':
+        return this.cancelOrder(id);
+    }
+  }
+}
+```
+
+## Monitoring and Observability
+
+Three pillars of observability:
+
+1. **Logs**: Structured, traceable events
+2. **Metrics**: Aggregated numbers (latency, error rate)
+3. **Traces**: Request flow across services
+
+```javascript
+import { metrics } from '@opentelemetry/sdk-metrics';
+
+// Track service health
+const histogram = new metrics.Histogram({
+  name: 'service_request_duration',
+  unit: 'ms',
+});
+
+app.use((req, res, next) => {
+  const start = Date.now();
+  
+  res.on('finish', () => {
+    histogram.record(Date.now() - start, {
+      labels: { method: req.method, path: req.path, status: res.statusCode },
+    });
+  });
+  
+  next();
+});
+
+// Health check endpoint for load balancers
+app.get('/health', (req, res) => {
+  const healthy = {
+    service: 'order-service',
+    uptime: process.uptime(),
+    memory: process.memoryUsage(),
+    status: 'ok',
+  };
+  
+  res.json(healthy);
+});
+```
+
+Microservices trade simplicity for scale. The patterns above — event-driven communication, circuit breakers, distributed tracing — are the tools that make distributed systems manageable. Choose them when your organizational and scaling needs justify the operational complexity.

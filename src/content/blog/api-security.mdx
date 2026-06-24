@@ -1,0 +1,248 @@
+---
+title: API Security Best Practices
+description: Essential security measures every API needs — from rate limiting and CORS to authentication, validation, and input sanitization.
+pubDate: 2026-10-25
+tags: ["security", "api", "best-practices"]
+draft: false
+featured: true
+---
+
+## The Attack Surface
+
+APIs are the most exposed part of your application. Every endpoint is a potential entry point for attackers. Understanding common attack vectors and their mitigations is essential.
+
+### OWASP API Security Top 10
+
+The top risks include broken object-level authorization, excessive data exposure, and lack of rate limiting. Let's address each systematically.
+
+## Rate Limiting
+
+Throttle requests to prevent abuse:
+
+```javascript
+import rateLimit from 'express-rate-limit';
+
+// Global rate limiter
+const globalLimiter = rateLimit({
+  windowMs: 15 * 60 * 1000, // 15 minutes
+  max: 100, // per IP per window
+  standardHeaders: true,
+  legacyHeaders: false,
+  handler: (req, res) => {
+    res.status(429).json({ error: 'Too many requests. Try again later.' });
+  },
+});
+
+// Stricter limiter for auth endpoints
+const authLimiter = rateLimit({
+  windowMs: 15 * 60 * 1000,
+  max: 10, // Only 10 login attempts per 15 minutes
+  handler: (req, res) => {
+    res.status(429).json({ error: 'Account locked. Try again in 15 minutes.' });
+  },
+});
+
+app.use('/api/auth/', authLimiter);
+app.use('/', globalLimiter);
+```
+
+## CORS Configuration
+
+Control which origins can access your API:
+
+```javascript
+import cors from 'cors';
+
+const allowedOrigins = [
+  'https://myapp.com',
+  'https://admin.myapp.com',
+];
+
+app.use(cors({
+  origin: (origin, callback) => {
+    if (!origin || allowedOrigins.includes(origin)) {
+      callback(null, true);
+    } else {
+      callback(new Error('Not allowed by CORS'));
+    }
+  },
+  methods: ['GET', 'POST', 'PUT', 'DELETE'],
+  allowedHeaders: ['Content-Type', 'Authorization'],
+  credentials: true, // Allow cookies with credentials mode
+}));
+```
+
+## Input Validation and Sanitization
+
+Never trust client input. Validate everything:
+
+```javascript
+import { z } from 'zod';
+
+const CreateUserSchema = z.object({
+  name: z.string().min(2).max(100),
+  email: z.string().email(),
+  age: z.number().int().min(0).max(150).optional(),
+});
+
+function validate(schema, data) {
+  const result = schema.safeParse(data);
+  
+  if (!result.success) {
+    throw new Error(`Validation failed: ${result.error.errors.map(e => e.message).join(', ')}`);
+  }
+  
+  return result.data;
+}
+
+// In your route handler
+app.post('/api/users', async (req, res) => {
+  try {
+    const validated = validate(CreateUserSchema, req.body);
+    const user = await db.users.insert(validated);
+    res.status(201).json(user);
+  } catch (err) {
+    res.status(400).json({ error: err.message });
+  }
+});
+```
+
+## SQL Injection Prevention
+
+Use parameterized queries — never concatenate user input into SQL:
+
+```javascript
+// Bad: String concatenation — vulnerable to injection
+const query = `SELECT * FROM users WHERE email = '${req.body.email}'`;
+
+// Good: Parameterized query
+const result = await db.query(
+  'SELECT * FROM users WHERE email = $1',
+  [req.body.email]
+);
+
+// ORMs handle this automatically
+const user = await db.users.findFirst({
+  where: { email: req.body.email }, // Safe — always parameterized
+});
+```
+
+## Authentication and Authorization
+
+### Object-Level Authorization
+
+Ensure users can only access their own resources:
+
+```javascript
+async function getUser(req, res) {
+  const userId = req.user.id; // From authentication middleware
+  
+  // Fetch with user's ID in the query — they can't see others' data
+  const user = await db.users.findFirst({
+    where: { id: userId },
+  });
+  
+  if (!user) return res.status(404).json({ error: 'Not found' });
+  
+  res.json(user);
+}
+
+// For shared resources, verify ownership
+async function getDocument(req, res) {
+  const docId = req.params.id;
+  const userId = req.user.id;
+  
+  // Only return if the user owns or has access to this document
+  const doc = await db.documents.findFirst({
+    where: { id: docId, OR: [{ ownerId: userId }, { sharedWith: userId }] },
+  });
+  
+  if (!doc) return res.status(403).json({ error: 'Access denied' });
+  
+  res.json(doc);
+}
+```
+
+## HTTP Security Headers
+
+Protect against client-side attacks with response headers:
+
+```javascript
+import helmet from 'helmet';
+
+app.use(helmet()); // Sets all security headers automatically
+
+// Additional headers
+app.use((req, res, next) => {
+  res.setHeader('X-Content-Type-Options', 'nosniff');
+  res.setHeader('X-Frame-Options', 'DENY');
+  res.setHeader('X-XSS-Protection', '1; mode=block');
+  res.setHeader('Referrer-Policy', 'strict-origin-when-cross-origin');
+  
+  // Prevent clickjacking and content type sniffing
+  next();
+});
+```
+
+## Data Exposure Prevention
+
+Return only what's needed. Never return entire objects:
+
+```javascript
+// Bad: Returns everything including password hash, internal fields
+res.json(user); // { id, name, email, passwordHash, role, createdAt, ... }
+
+// Good: Explicitly select fields
+const safeUser = {
+  id: user.id,
+  name: user.name,
+  email: user.email,
+};
+res.json(safeUser);
+
+// Or use a response transformer
+function sanitizeUser(user) {
+  const { passwordHash, role, ...rest } = user;
+  return rest;
+}
+```
+
+## Logging and Monitoring
+
+Track suspicious activity:
+
+```javascript
+import morgan from 'morgan';
+
+app.use(morgan('combined')); // Standard log format
+
+// Alert on anomalies
+function monitorSecurity(req) {
+  const ip = req.ip;
+  
+  // Track failed auth attempts per IP
+  if (req.path === '/api/auth/login' && req.method === 'POST') {
+    const failedAttempts = getFailedAttempts(ip);
+    
+    if (failedAttempts > 10) {
+      alertSecurityTeam(`Brute force detected from ${ip}`);
+      blockIP(ip, 3600); // Block for 1 hour
+    }
+  }
+}
+
+app.use(monitorSecurity);
+```
+
+## Security Checklist
+
+- [ ] **Rate limit** all endpoints, especially auth
+- [ ] **Validate and sanitize** every input
+- [ ] **Use parameterized queries** — never string concatenation
+- [ ] **Implement object-level authorization** for shared resources
+- [ ] **Set security headers** on every response
+- [ ] **Minimize data exposure** in API responses
+- [ ] **Log and monitor** for suspicious patterns
+- [ ] **Use HTTPS** everywhere with HSTS enabled
+
+API security is not a feature you add — it's a requirement you build into every layer. Each practice above addresses a specific threat vector, but together they form defense-in-depth that protects against the majority of real-world attacks.

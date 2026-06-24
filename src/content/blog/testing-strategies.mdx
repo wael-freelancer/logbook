@@ -1,0 +1,271 @@
+---
+title: Testing Strategies for Modern Web Apps
+description: A comprehensive guide to unit, integration, and end-to-end testing with Vitest, React Testing Library, and Playwright.
+pubDate: 2026-11-10
+tags: ["testing", "vitest", "playwright"]
+draft: false
+featured: true
+---
+
+## The Test Pyramid
+
+Effective testing follows a pyramid structure: many small unit tests at the base, fewer integration tests in the middle, and minimal end-to-end tests at the top. Each layer serves a different purpose.
+
+```
+        E2E Tests (few)
+       Integration Tests (some)
+      Unit Tests (many)
+```
+
+## Unit Testing with Vitest
+
+Unit tests isolate individual functions and components:
+
+```typescript
+// utils/validators.test.ts
+import { describe, it, expect } from 'vitest';
+import { validateEmail, validatePassword } from './validators';
+
+describe('validateEmail', () => {
+  it('accepts valid emails', () => {
+    expect(validateEmail('alice@example.com')).toBe(true);
+    expect(validateEmail('bob.smith@company.org')).toBe(true);
+  });
+  
+  it('rejects invalid emails', () => {
+    expect(validateEmail('not-an-email')).toBe(false);
+    expect(validateEmail('@missing-local.com')).toBe(false);
+    expect(validateEmail('')).toBe(false);
+  });
+});
+
+describe('validatePassword', () => {
+  it('requires minimum length', () => {
+    expect(validatePassword('short')).toBe(false);
+    expect(validatePassword('12345678')).toBe(true);
+  });
+  
+  it('requires at least one number', () => {
+    expect(validatePassword('abcdefgh')).toBe(false);
+    expect(validatePassword('a1bcdefg')).toBe(true);
+  });
+});
+```
+
+Run with:
+
+```bash
+npx vitest run          # Run all tests
+npx vitest watch        # Watch mode — rerun on changes
+npx vitest --coverage   # Generate coverage report
+```
+
+## Component Testing with React Testing Library
+
+Test components the way users interact with them:
+
+```typescript
+// src/components/LoginForm.test.tsx
+import { render, screen } from '@testing-library/react';
+import userEvent from '@testing-library/user-event';
+import { LoginForm } from './LoginForm';
+import { describe, it, expect, vi } from 'vitest';
+
+describe('LoginForm', () => {
+  it('renders with correct labels and placeholders', () => {
+    render(<LoginForm onSubmit={vi.fn()} />);
+    
+    expect(screen.getByLabelText(/email/i)).toBeInTheDocument();
+    expect(screen.getByLabelText(/password/i)).toBeInTheDocument();
+    expect(screen.getByRole('button', { name: /sign in/i })).toBeInTheDocument();
+  });
+  
+  it('calls onSubmit with form data on submit', async () => {
+    const handleSubmit = vi.fn();
+    render(<LoginForm onSubmit={handleSubmit} />);
+    
+    await userEvent.type(screen.getByLabelText(/email/i), 'alice@example.com');
+    await userEvent.type(screen.getByLabelText(/password/i), 'secret123');
+    await userEvent.click(screen.getByRole('button', { name: /sign in/i }));
+    
+    expect(handleSubmit).toHaveBeenCalledWith({
+      email: 'alice@example.com',
+      password: 'secret123',
+    });
+  });
+  
+  it('shows validation error for empty fields', async () => {
+    render(<LoginForm onSubmit={vi.fn()} />);
+    
+    const button = screen.getByRole('button', { name: /sign in/i });
+    await userEvent.click(button);
+    
+    expect(screen.getByText(/email is required/i)).toBeInTheDocument();
+    expect(screen.getByText(/password is required/i)).toBeInTheDocument();
+  });
+});
+```
+
+## Integration Testing with Vitest
+
+Test that multiple units work together correctly:
+
+```typescript
+// services/userService.test.ts
+import { describe, it, expect, vi, beforeEach } from 'vitest';
+import { UserService } from './userService';
+
+const mockDb = {
+  users: {
+    findFirst: vi.fn(),
+    create: vi.fn(),
+    update: vi.fn(),
+  },
+};
+
+vi.mock('@/db', () => ({ db: mockDb }));
+
+describe('UserService', () => {
+  beforeEach(() => {
+    vi.clearAllMocks();
+  });
+  
+  it('creates a user and returns the result', async () => {
+    mockDb.users.create.mockResolvedValue({ id: '1', name: 'Alice' });
+    
+    const user = await UserService.create({ name: 'Alice', email: 'alice@example.com' });
+    
+    expect(mockDb.users.create).toHaveBeenCalledWith({
+      name: 'Alice',
+      email: 'alice@example.com',
+    });
+    expect(user).toEqual({ id: '1', name: 'Alice' });
+  });
+  
+  it('throws error on duplicate email', async () => {
+    mockDb.users.findFirst.mockResolvedValue({ id: '2', email: 'alice@example.com' });
+    
+    await expect(UserService.create({ name: 'Bob', email: 'alice@example.com' }))
+      .rejects.toThrow('Email already exists');
+  });
+});
+```
+
+## End-to-End Testing with Playwright
+
+Test complete user flows in a real browser:
+
+```typescript
+// tests/e2e.spec.ts
+import { test, expect } from '@playwright/test';
+
+test('user can register and login', async ({ page }) => {
+  // Step 1: Navigate to registration page
+  await page.goto('/register');
+  await page.getByLabel(/name/i).fill('Alice Smith');
+  await page.getByLabel(/email/i).fill('alice@example.com');
+  await page.getByLabel(/password/i).fill('securepass123');
+  await page.getByRole('button', { name: /register/i }).click();
+  
+  // Step 2: Verify redirect to dashboard
+  await expect(page).toHaveURL('/dashboard');
+  await expect(page.getByText(/welcome, alice/i)).toBeVisible();
+});
+
+test('form validation prevents empty submission', async ({ page }) => {
+  await page.goto('/login');
+  await page.getByRole('button', { name: /sign in/i }).click();
+  
+  // Validation messages should appear
+  await expect(page.getByText(/email is required/i)).toBeVisible();
+  await expect(page.getByText(/password is required/i)).toBeVisible();
+});
+
+test('api integration — create and fetch user', async ({ page }) => {
+  // Use Playwright's network interception to test API layer
+  const responsePromise = page.waitForResponse(
+    response => response.url().includes('/api/users') && response.status() === 201
+  );
+  
+  await page.goto('/users');
+  await page.getByRole('button', { name: /add user/i }).click();
+  await page.getByLabel(/name/i).fill('Test User');
+  await page.getByRole('button', { name: /save/i }).click();
+  
+  const response = await responsePromise;
+  expect(response.status()).toBe(201);
+});
+```
+
+## Mocking Strategies
+
+### Function Mocks (Unit Tests)
+
+```typescript
+// Mock a function completely
+const mockFn = vi.fn().mockReturnValue({ id: '1', name: 'Alice' });
+
+describe('getUser', () => {
+  it('returns user data from API', async () => {
+    const result = await getUser('1');
+    expect(mockFn).toHaveBeenCalledWith('1');
+    expect(result.name).toBe('Alice');
+  });
+});
+```
+
+### Network Mocks (Integration Tests)
+
+```typescript
+import { http, HttpResponse } from 'msw';
+import { setupServer } from 'msw/node';
+
+const server = setupServer(
+  http.get('https://api.example.com/users/:id', () => {
+    return HttpResponse.json({ id: '1', name: 'Alice' });
+  }),
+  
+  http.post('https://api.example.com/users', () => {
+    return new HttpResponse(null, { status: 201 });
+  })
+);
+
+beforeAll(() => server.listen());
+afterEach(() => server.resetHandlers());
+afterAll(() => server.close());
+```
+
+## CI/CD Integration
+
+Run tests automatically on every commit:
+
+```yaml
+# .github/workflows/test.yml
+name: Tests
+on: [push, pull_request]
+
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+      
+      - run: npm ci
+      - run: npm test       # Unit + integration tests (Vitest)
+      - run: npx playwright install
+      - run: npx playwright test  # E2E tests (Playwright)
+```
+
+## Testing Principles
+
+- **Unit tests**: Fast, isolated, mock everything external. Run on every save.
+- **Integration tests**: Test real modules together. Mock the network layer.
+- **E2E tests**: Slow but valuable — verify complete user flows in a browser.
+- **Test behavior, not implementation**: Focus on what users see and do.
+
+A well-tested application gives you confidence to refactor, ship features faster, and catch regressions before they reach production. The key is choosing the right test for each layer of your stack.

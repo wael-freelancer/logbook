@@ -1,0 +1,296 @@
+---
+title: CI/CD Pipelines for Web Applications
+description: Setting up automated testing, building, and deploying web applications with GitHub Actions, Docker, and modern deployment platforms.
+pubDate: 2027-01-10
+tags: ["ci-cd", "devops", "automation"]
+draft: false
+featured: true
+---
+
+## Automating the Delivery Pipeline
+
+Continuous Integration and Continuous Deployment automate the path from code to production. A well-configured pipeline catches errors early, ships reliably, and gives developers confidence with every commit.
+
+### The Pipeline Stages
+
+1. **Lint** — Check code style and conventions
+2. **Test** — Run unit, integration, and E2E tests
+3. **Build** — Compile and bundle the application
+4. **Deploy** — Push to staging or production
+
+## GitHub Actions Workflow
+
+```yaml
+# .github/workflows/ci.yml
+name: CI/CD Pipeline
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+    branches: [main]
+
+env:
+  NODE_VERSION: '20'
+
+jobs:
+  # Stage 1: Lint and Test
+  quality:
+    runs-on: ubuntu-latest
+    
+    steps:
+      - uses: actions/checkout@v4
+      
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: ${{ env.NODE_VERSION }}
+          cache: 'npm'
+      
+      - run: npm ci
+      - run: npm run lint    # ESLint + Prettier check
+      
+      - name: Run unit tests
+        run: npm test
+        env:
+          DATABASE_URL: ${{ secrets.TEST_DATABASE_URL }}
+      
+      - name: Upload coverage
+        uses: codecov/codecov-action@v3
+  
+  # Stage 2: Build and Deploy
+  deploy:
+    needs: quality
+    runs-on: ubuntu-latest
+    
+    steps:
+      - uses: actions/checkout@v4
+      
+      - name: Build Docker image
+        run: docker build -t myapp:${{ github.sha }} .
+      
+      - name: Push to registry
+        run: |
+          echo "${{ secrets.REGISTRY_PASSWORD }}" | docker login -u ${{ secrets.REGISTRY_USERNAME }} --password-stdin
+          docker push myapp:${{ github.sha }}
+      
+      - name: Deploy to production
+        if: github.ref == 'refs/heads/main' && github.event_name == 'push'
+        run: ./scripts/deploy.sh
+```
+
+## Docker for Consistent Builds
+
+Containerize your application for reproducible builds:
+
+```dockerfile
+# Dockerfile
+FROM node:20-alpine AS builder
+
+WORKDIR /app
+
+COPY package*.json ./
+RUN npm ci --only=production
+
+COPY . .
+RUN npm run build
+
+# Production image
+FROM node:20-alpine
+WORKDIR /app
+
+COPY --from=builder /app/dist ./dist
+COPY --from=builder /app/node_modules ./node_modules
+
+USER node
+EXPOSE 3000
+
+CMD ["node", "dist/server.js"]
+```
+
+## Multi-Environment Deployments
+
+Route deployments to different environments based on the branch:
+
+```yaml
+# .github/workflows/environments.yml
+name: Environment Routing
+
+on:
+  pull_request:
+    branches: [main]
+
+jobs:
+  preview-deploy:
+    runs-on: ubuntu-latest
+    
+    steps:
+      - uses: actions/checkout@v4
+      
+      - name: Deploy Preview Environment
+        run: |
+          ./scripts/deploy-preview.sh \
+            --branch ${{ github.head_ref }} \
+            --pr-number ${{ github.event.pull_request.number }}
+        
+        env:
+          DEPLOY_TOKEN: ${{ secrets.PREVIEW_DEPLOY_KEY }}
+  
+  production-deploy:
+    needs: quality-checks
+    runs-on: ubuntu-latest
+    
+    # Only deploy from main branch
+    if: github.ref == 'refs/heads/main' && github.event_name == 'push'
+    
+    steps:
+      - uses: actions/checkout@v4
+      
+      - name: Deploy to Production
+        run: ./scripts/deploy-production.sh
+        
+        env:
+          DEPLOY_TOKEN: ${{ secrets.PROD_DEPLOY_KEY }}
+```
+
+## Database Migrations in CI/CD
+
+Run migrations before deploying application code:
+
+```yaml
+# .github/workflows/migrations.yml
+name: Database Migrations
+
+on:
+  workflow_dispatch: # Manual trigger for safety
+
+jobs:
+  migrate:
+    runs-on: ubuntu-latest
+    
+    services:
+      postgres:
+        image: postgres:16
+        env:
+          POSTGRES_PASSWORD: test
+        ports:
+          - 5432:5432
+        options: >-
+          --healthcheck-timeout=60s
+          --health-retries=10
+    
+    steps:
+      - uses: actions/checkout@v4
+      
+      - name: Run migrations
+        run: npm run db:migrate
+        env:
+          DATABASE_URL: postgres://postgres:test@localhost:5432/test_db
+      
+      - name: Verify schema
+        run: npm run db:verify
+```
+
+## Deployment Strategies
+
+### Blue-Green Deployments
+
+Keep two identical environments and switch traffic instantly:
+
+```bash
+#!/scripts/deploy-blue-green.sh
+
+# 1. Build new version
+npm run build --out=build-v2
+
+# 2. Test in staging (green)
+docker-compose -f docker-compose.staging.yml up -d
+npm test --url=http://localhost:3001
+
+# 3. Switch traffic to green
+nginx -s reload # Changes upstream from blue to green
+
+# 4. Verify health
+curl -f http://production/health || exit 1
+
+# 5. Decommission old version (blue)
+docker-compose -f docker-compose.staging.yml down blue
+```
+
+### Canary Deployments
+
+Roll out gradually, monitoring for issues:
+
+```yaml
+# deploy/canary.yaml
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: myapp-canary
+spec:
+  replicas: 1  # Only 10% of traffic goes to canary initially
+  
+  template:
+    spec:
+      containers:
+        - name: app
+          image: myapp:${{ github.sha }}
+          readinessProbe:
+            httpGet:
+              path: /health
+              port: 3000
+
+---
+# Traffic routing — send 10% to canary, 90% to stable
+apiVersion: networking.istio.io/v1alpha1
+kind: VirtualService
+metadata:
+  name: myapp
+spec:
+  http:
+    - route:
+        - destination:
+            host: myapp-stable
+          weight: 90
+        - destination:
+            host: myapp-canary
+          weight: 10
+```
+
+## Monitoring Post-Deployment
+
+Track deployment health in real-time:
+
+```javascript
+// Health check endpoint — used by CI/CD and load balancers
+app.get('/health', async (req, res) => {
+  const checks = {
+    database: await db.ping(),
+    redis: await redis.ping(),
+    uptime: process.uptime(),
+    version: process.env.APP_VERSION,
+  };
+  
+  const healthy = Object.values(checks).every(Boolean);
+  
+  res.status(healthy ? 200 : 503).json({ status: healthy ? 'ok' : 'degraded', checks });
+});
+
+// Deployment tracking — notify CI/CD of success/failure
+async function trackDeployment(version) {
+  await fetch('https://deployments.example.com/api/deploy', {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ version, status: 'success', timestamp: new Date().toISOString() }),
+  });
+}
+```
+
+## Security in CI/CD
+
+- **Scan dependencies** for known vulnerabilities (`npm audit`, `snyk`)
+- **Rotate secrets** automatically — never hardcode credentials
+- **Sign builds** with provenance attestations (SLSA)
+- **Restrict access** to production deployments with approval gates
+
+A robust CI/CD pipeline turns deployment from a scary event into an everyday routine. With automated quality checks, reproducible builds, and safe deployment strategies, you ship faster without sacrificing reliability.

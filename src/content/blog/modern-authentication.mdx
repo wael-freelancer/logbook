@@ -1,0 +1,228 @@
+---
+title: Modern Authentication Patterns
+description: Comparing OAuth 2.0, OpenID Connect, JWT sessions, and session-based auth for building secure web applications.
+pubDate: 2026-09-25
+tags: ["authentication", "security", "oauth"]
+draft: false
+featured: true
+---
+
+## The Authentication Landscape
+
+Modern authentication has evolved far beyond username/password forms. Understanding the trade-offs between different approaches helps you choose the right pattern for your application.
+
+### Auth Methods Compared
+
+| Method | Best For | Complexity | Security |
+|--------|----------|------------|---------|
+| Session/Cookie | Traditional web apps | Low | High (with proper config) |
+| JWT tokens | SPAs, mobile apps | Medium | Medium (token storage matters) |
+| OAuth 2.0 | Third-party login | High | Depends on flow |
+| Passkeys | Passwordless UX | Medium | Very high |
+
+## Session-Based Authentication
+
+The classic approach — simple and secure when configured correctly:
+
+```javascript
+import express from 'express';
+import session from 'express-session';
+import cookieParser from 'cookie-parser';
+
+const app = express();
+
+app.use(cookieParser());
+app.use(session({
+  secret: process.env.SESSION_SECRET,
+  resave: false,
+  saveUninitialized: false,
+  cookie: {
+    httpOnly: true,   // Not accessible via JavaScript
+    secure: true,     // HTTPS only (production)
+    sameSite: 'strict', // CSRF protection
+    maxAge: 24 * 60 * 60 * 1000, // 24 hours
+  },
+  store: new RedisStore({ client }), // Shared across servers
+}));
+
+app.post('/login', async (req, res) => {
+  const user = await authenticate(req.body);
+  
+  if (!user) {
+    return res.status(401).json({ error: 'Invalid credentials' });
+  }
+  
+  req.session.userId = user.id;
+  res.json({ success: true });
+});
+
+app.get('/api/profile', (req, res) => {
+  if (!req.session.userId) {
+    return res.status(401).json({ error: 'Not authenticated' });
+  }
+  
+  getUser(req.session.userId).then(user => res.json(user));
+});
+```
+
+## JWT Authentication
+
+JSON Web Tokens enable stateless authentication — no session storage needed:
+
+```javascript
+import jwt from 'jsonwebtoken';
+import { sign, verify } from 'jsonwebtoken';
+
+// Login endpoint returns a token
+app.post('/login', async (req, res) => {
+  const user = await authenticate(req.body);
+  
+  if (!user) return res.status(401).json({ error: 'Invalid' });
+  
+  const token = sign(
+    { sub: user.id, role: user.role },
+    process.env.JWT_SECRET,
+    { expiresIn: '24h' }
+  );
+  
+  res.json({ token });
+});
+
+// Protected route middleware
+function authenticateToken(req, res, next) {
+  const token = req.headers.authorization?.split(' ')[1];
+  
+  if (!token) return res.status(401).json({ error: 'No token' });
+  
+  try {
+    const decoded = verify(token, process.env.JWT_SECRET);
+    req.user = decoded;
+    next();
+  } catch (err) {
+    res.status(403).json({ error: 'Invalid token' });
+  }
+}
+
+app.get('/api/profile', authenticateToken, async (req, res) => {
+  const user = await getUser(req.user.sub);
+  res.json(user);
+});
+```
+
+### Token Storage Matters
+
+```javascript
+// Bad: localStorage — accessible via JavaScript, vulnerable to XSS
+localStorage.setItem('token', token);
+
+// Good: HttpOnly cookie — not accessible via JS, protected by browser
+document.cookie = `token=${token}; HttpOnly; Secure; SameSite=Strict`;
+```
+
+## OAuth 2.0 with OpenID Connect
+
+Let users sign in with their existing accounts:
+
+```javascript
+import { Issuer, Client } from 'openid-client';
+
+// Configure the provider
+const issuer = await Issuer.discover('https://accounts.google.com');
+const client = new issuer.Client({
+  client_id: process.env.GOOGLE_CLIENT_ID,
+  client_secret: process.env.GOOGLE_CLIENT_SECRET,
+  redirect_uri: 'http://localhost:3000/auth/google/callback',
+});
+
+// Redirect to provider
+app.get('/auth/google', (req, res) => {
+  const authorizationUrl = client.authorizationUrl({
+    scope: 'openid profile email',
+    state: generateState(), // CSRF protection
+  });
+  
+  res.redirect(authorizationUrl);
+});
+
+// Handle callback
+app.get('/auth/google/callback', async (req, res) => {
+  const params = {
+    code: req.query.code,
+    redirect_uri: 'http://localhost:3000/auth/google/callback',
+  };
+  
+  // Exchange code for tokens
+  const tokenResponse = await client.token(params);
+  const claims = tokenResponse.claims();
+  
+  // claims.sub is the unique user identifier from Google
+  const user = await findOrCreateUser(claims.sub, claims.email);
+  
+  req.session.userId = user.id;
+  res.redirect('/dashboard');
+});
+```
+
+## Passkeys (Passwordless)
+
+The future of authentication — cryptographic keys stored on devices:
+
+```javascript
+// Registration
+async function registerUser(user) {
+  const publicKeyCredentialRequestOptions = {
+    challenge: generateRandomBytes(32),
+    timeout: 60000,
+    userVerification: 'required',
+  };
+  
+  const credential = await navigator.credentials.create({
+    publicKey: {
+      ...publicKeyCredentialRequestOptions,
+      rp: { name: 'My App' },
+      user: {
+        id: crypto.randomUUID().arrayBuffer(),
+        name: user.email,
+        displayName: user.name,
+      },
+    },
+  });
+  
+  // Store credential ID and public key in database
+  await db.credentials.insert({
+    userId: user.id,
+    publicKey: credential.publicKey,
+    credentialId: credential.id,
+  });
+}
+
+// Authentication
+async function authenticateUser() {
+  const assertion = await navigator.credentials.get({
+    publicKey: {
+      rpId: 'myapp.com',
+      allowCredentials: [/* user's registered credentials */],
+      userVerification: 'required',
+    },
+  });
+  
+  // Verify against stored public key
+  const isValid = await verifyCredential(assertion);
+  
+  if (isValid) {
+    // Grant access — no password ever involved
+    return grantSession();
+  }
+}
+```
+
+## Security Checklist
+
+- [ ] **Hash passwords** with bcrypt, argon2, or scrypt (never plain text)
+- [ ] **Rotate sessions** after login to prevent fixation attacks
+- [ ] **Use HTTPS** everywhere — never serve auth over HTTP
+- [ ] **Set SameSite cookies** to prevent CSRF
+- [ ] **Implement rate limiting** on authentication endpoints
+- [ ] **Log failed attempts** and lock accounts after repeated failures
+
+Authentication is one of the most critical security concerns in web development. The pattern you choose should match your threat model — session-based for traditional apps, JWT for SPAs, OAuth for third-party integration, and passkeys for the best user experience with maximum security.

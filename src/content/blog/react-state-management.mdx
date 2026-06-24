@@ -1,0 +1,195 @@
+---
+title: State Management Without Libraries
+description: How to build robust application state using React hooks, context, and modern patterns without Redux or Zustand.
+pubDate: 2026-06-20
+tags: ["react", "state-management", "hooks"]
+draft: false
+featured: true
+---
+
+## The Case Against Libraries
+
+Modern React provides everything needed for state management. `useState`, `useReducer`, and `useContext` cover most use cases. External libraries add complexity, bundle size, and abstraction layers that obscure what's happening.
+
+### When to Use What
+
+| Pattern | Best For |
+|---|---|
+| `useState` | Local component state (forms, toggles) |
+| `useReducer` | Complex state with multiple related values |
+| `useContext` | Shared state across the component tree |
+| URL state | State that should be bookmarkable or shareable |
+
+## useState for Simple State
+
+Most state is simple. Don't over-engineer:
+
+```javascript
+function SearchBar() {
+  const [query, setQuery] = useState('');
+  const [isFocused, setIsFocused] = useState(false);
+  
+  return (
+    <form onSubmit={(e) => e.preventDefault()}>
+      <input
+        value={query}
+        onChange={(e) => setQuery(e.target.value)}
+        onFocus={() => setIsFocused(true)}
+        onBlur={() => setIsFocused(false)}
+        placeholder="Search..."
+      />
+      {isFocused && query && <Results items={filter(query)} />}
+    </form>
+  );
+}
+```
+
+## useReducer for Complex State
+
+When state has multiple sub-values or transitions depend on previous state:
+
+```javascript
+function todoReducer(state, action) {
+  switch (action.type) {
+    case 'add':
+      return [...state, { id: Date.now(), text: action.text, done: false }];
+    
+    case 'toggle':
+      return state.map(todo =>
+        todo.id === action.id ? { ...todo, done: !todo.done } : todo
+      );
+    
+    case 'remove':
+      return state.filter(todo => todo.id !== action.id);
+    
+    case 'clear-done':
+      return state.filter(todo => !todo.done);
+      
+    default:
+      return state;
+  }
+}
+
+function TodoList() {
+  const [todos, dispatch] = useReducer(todoReducer, []);
+  
+  return (
+    <div>
+      <button onClick={() => dispatch({ type: 'add', text: 'New task' })}>
+        Add Task
+      </button>
+      
+      <ul>
+        {todos.map(todo => (
+          <li key={todo.id}>
+            <input
+              type="checkbox"
+              checked={todo.done}
+              onChange={() => dispatch({ type: 'toggle', id: todo.id })}
+            />
+            <span style={{ textDecoration: todo.done ? 'line-through' : 'none' }}>
+              {todo.text}
+            </span>
+          </li>
+        ))}
+      </ul>
+      
+      <button onClick={() => dispatch({ type: 'clear-done' })}>
+        Clear Completed
+      </button>
+    </div>
+  );
+}
+```
+
+## Context for Shared State
+
+Avoid prop drilling by lifting state into context:
+
+```javascript
+const ThemeContext = createContext();
+
+function ThemeProvider({ children }) {
+  const [theme, setTheme] = useState('light');
+  
+  const value = useMemo(() => ({ theme, toggle: () => setTheme(t => t === 'light' ? 'dark' : 'light') }), [theme]);
+  
+  return (
+    <ThemeContext.Provider value={value}>
+      {children}
+    </ThemeContext.Provider>
+  );
+}
+
+function useTheme() {
+  const ctx = useContext(ThemeContext);
+  if (!ctx) throw new Error('useTheme must be used within ThemeProvider');
+  return ctx;
+}
+```
+
+## State Colocation
+
+Keep state as close to where it's used as possible:
+
+```javascript
+// Bad — global state for something local
+function App() {
+  const [sidebarOpen, setSidebarOpen] = useState(false); // Context? Overkill.
+  
+  return (
+    <ThemeProvider>
+      <Sidebar open={sidebarOpen} onClose={() => setSidebarOpen(false)} />
+      <MainContent />
+    </ThemeProvider>
+  );
+}
+
+// Good — state lives in the component that needs it
+function Sidebar() {
+  const [isOpen, setIsOpen] = useState(false); // Local state
+  
+  return (
+    <aside className={isOpen ? 'open' : ''}>
+      <button onClick={() => setIsOpen(!isOpen)}>Toggle</button>
+    </aside>
+  );
+}
+```
+
+## URL as State
+
+For bookmarkable, shareable state, use the URL:
+
+```javascript
+function FilteredProducts() {
+  const [filters, setFilters] = useState({
+    category: 'all',
+    sort: 'newest'
+  });
+  
+  // Sync with URL — back button works, can share link
+  useEffect(() => {
+    const params = new URLSearchParams(window.location.search);
+    if (params.get('category')) setFilters(f => ({ ...f, category: params.get('category') }));
+    if (params.get('sort')) setFilters(f => ({ ...f, sort: params.get('sort') }));
+  }, []);
+  
+  const updateFilter = (key, value) => {
+    setFilters(prev => ({ ...prev, [key]: value }));
+    window.history.pushState(null, '', `?${key}=${value}`);
+  };
+  
+  return <ProductList filters={filters} />;
+}
+```
+
+## When Libraries Make Sense
+
+Libraries aren't always wrong. Consider them when:
+
+- You need **time-travel debugging** (Redux DevTools)
+- State is shared across a **large team** with strict conventions
+- You're migrating from legacy code and need gradual adoption
+
+For most applications, React's built-in patterns are sufficient. The best state management is the one you don't need to install.

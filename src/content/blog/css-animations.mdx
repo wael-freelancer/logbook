@@ -1,0 +1,251 @@
+---
+title: CSS Animations and Transitions
+description: Creating smooth, performant animations using CSS transforms, keyframes, and the Web Animations API.
+pubDate: 2026-11-25
+tags: ["css", "animations", "performance"]
+draft: false
+featured: true
+---
+
+## The Performance Rule
+
+Only animate properties that use GPU compositing: `transform` and `opacity`. Everything else triggers layout or paint, which runs on the CPU and causes jank.
+
+### Property Cost Chart
+
+| Property | Layer | Cost |
+|----------|-------|------|
+| transform | Compositor only | Low |
+| opacity | Compositor only | Low |
+| filter | Compositor (usually) | Medium |
+| width, height | Layout + Paint | High |
+| top, left | Layout + Paint | High |
+| background-color | Paint | Medium |
+
+## CSS Transitions
+
+The simplest animation primitive — interpolate between two states:
+
+```css
+.card {
+  transition: transform 200ms ease, opacity 300ms ease;
+}
+
+.card:hover {
+  transform: translateY(-4px);
+  opacity: 0.95;
+}
+
+/* Multiple states with different timings */
+.button {
+  transition: background-color 150ms ease, box-shadow 200ms ease;
+}
+
+.button:active {
+  transform: scale(0.97);
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.2);
+}
+```
+
+## CSS Keyframes
+
+For multi-step animations with precise control:
+
+```css
+@keyframes fadeInUp {
+  from {
+    opacity: 0;
+    transform: translateY(20px);
+  }
+  
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+@keyframes slideInFromLeft {
+  from {
+    opacity: 0;
+    transform: translateX(-30px);
+  }
+  
+  to {
+    opacity: 1;
+    transform: translateX(0);
+  }
+}
+
+@keyframes pulse {
+  0%, 100% {
+    transform: scale(1);
+    opacity: 1;
+  }
+  
+  50% {
+    transform: scale(1.05);
+    opacity: 0.8;
+  }
+}
+
+/* Apply animations */
+.modal-enter {
+  animation: fadeInUp 300ms ease-out forwards;
+}
+
+.notification {
+  animation: slideInFromLeft 400ms cubic-bezier(0.16, 1, 0.3, 1) forwards;
+}
+
+.loading-spinner {
+  animation: pulse 2s ease-in-out infinite;
+}
+```
+
+## Staggered Animations
+
+Animate multiple elements with delays using CSS custom properties:
+
+```css
+.list-item {
+  opacity: 0;
+  transform: translateX(-10px);
+  animation: slideIn 400ms ease forwards;
+  animation-delay: calc(var(--index) * 50ms);
+}
+
+@keyframes slideIn {
+  to {
+    opacity: 1;
+    transform: translateX(0);
+  }
+}
+```
+
+Set the index inline or via CSS variables:
+
+```html
+<div class="list">
+  <div class="list-item" style="--index: 0;">Item 1</div>
+  <div class="list-item" style="--index: 1;">Item 2</div>
+  <div class="list-item" style="--index: 2;">Item 3</div>
+</div>
+```
+
+## Intersection Observer Animations
+
+Animate elements when they enter the viewport:
+
+```javascript
+const observer = new IntersectionObserver(
+  (entries) => {
+    entries.forEach((entry) => {
+      if (entry.isIntersecting) {
+        entry.target.classList.add('animate-in');
+        observer.unobserve(entry.target); // Animate once
+      }
+    });
+  },
+  { threshold: 0.1, rootMargin: '0px 0px -50px' }
+);
+
+document.querySelectorAll('.fade-in').forEach(el => observer.observe(el));
+```
+
+```css
+.fade-in {
+  opacity: 0;
+  transform: translateY(20px);
+}
+
+.fade-in.animate-in {
+  animation: fadeInUp 600ms ease forwards;
+}
+```
+
+## Web Animations API
+
+For programmatic control, use the native Web Animations API — no library needed:
+
+```javascript
+// Animate an element with precise timing
+function animateElement(element, keyframes, options) {
+  return element.animate(keyframes, {
+    duration: 300,
+    easing: 'cubic-bezier(0.16, 1, 0.3, 1)',
+    fill: 'forwards',
+  });
+}
+
+// Staggered entrance for a list
+function animateList(items) {
+  items.forEach((item, index) => {
+    const animation = item.animate([
+      { opacity: 0, transform: 'translateY(20px)' },
+      { opacity: 1, transform: 'translateY(0)' }
+    ], {
+      duration: 400,
+      easing: 'ease-out',
+      delay: index * 75, // Stagger by 75ms per item
+    });
+    
+    // Play the animation (Web Animations are paused by default)
+    animation.play();
+  });
+}
+
+// Scroll-based animations
+function createScrollAnimation(element) {
+  const animation = element.animate([
+    { opacity: 0, transform: 'scale(0.9)' },
+    { opacity: 1, transform: 'scale(1)' }
+  ], {
+    duration: 500,
+    easing: 'ease-out',
+  });
+  
+  // Pause until scrolled into view
+  animation.pause();
+  
+  const observer = new IntersectionObserver(([entry]) => {
+    if (entry.isIntersecting) {
+      animation.play();
+    }
+  });
+  
+  observer.observe(element);
+}
+```
+
+## Motion Path Animations
+
+Animate elements along a defined path:
+
+```css
+@keyframes orbit {
+  from { transform: rotate(0deg) translateX(100px) rotate(0deg); }
+  to   { transform: rotate(360deg) translateX(100px) rotate(-360deg); }
+}
+
+.orbiting-dot {
+  animation: orbit 8s linear infinite;
+}
+```
+
+## Best Practices
+
+- **Use `will-change` sparingly** — it promotes elements to GPU layers prematurely
+- **Prefer CSS animations over JavaScript** when possible (compositor-only)
+- **Respect `prefers-reduced-motion`**:
+  ```css
+  @media (prefers-reduced-motion: reduce) {
+    *, *::before, *::after {
+      animation-duration: 0.01ms !important;
+      transition-duration: 0.01ms !important;
+    }
+  }
+  ```
+- **Use `cubic-bezier` for natural-feeling easing** instead of linear
+- **Test on low-end devices** — animations that run smoothly on desktop may not on mobile
+
+Great animations feel invisible. They guide the user's attention, provide feedback, and make interactions feel responsive. When done right, they enhance usability rather than distract from it.

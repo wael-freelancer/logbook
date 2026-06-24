@@ -1,0 +1,154 @@
+---
+title: Browser Performance Profiling
+description: A hands-on guide to measuring, diagnosing, and fixing performance bottlenecks using Chrome DevTools and Web Vitals.
+pubDate: 2026-07-28
+tags: ["performance", "devtools", "web-vitals"]
+draft: false
+featured: true
+---
+
+## The Profiling Mindset
+
+Performance work follows a simple cycle: measure, identify, fix, verify. Never optimize based on guesses — always start with data from real users or realistic lab environments.
+
+### Tools Overview
+
+| Tool | Purpose |
+|------|---------|
+| Lighthouse | Automated audits of performance, accessibility, SEO |
+| Performance tab | Timeline of JavaScript execution, rendering, painting |
+| Memory tab | Heap snapshots for memory leak detection |
+| Network tab | Resource loading times and sizes |
+| Web Vitals JS library | Real-user metrics in production |
+
+## Lighthouse Audits
+
+Run a full audit from Chrome DevTools or CLI:
+
+```bash
+# CLI approach — integrates into CI/CD
+npx lighthouse https://example.com --output=html --output=./lh-report.html
+```
+
+Key metrics to watch:
+
+- **First Contentful Paint (FCP)**: When the first content appears
+- **Largest Contentful Paint (LCP)**: When the largest element renders
+- **Total Blocking Time (TBT)**: Time blocked by long tasks (>50ms)
+- **Cumulative Layout Shift (CLS)**: Visual stability score
+
+## Performance Tab Deep Dive
+
+The Performance tab shows a timeline of everything that happened during page load.
+
+### Understanding Long Tasks
+
+Long tasks block the main thread and cause jank:
+
+```javascript
+// Find long tasks programmatically
+const observer = new PerformanceObserver((list) => {
+  for (const entry of list.getEntries()) {
+    console.log(`Long task: ${entry.duration.toFixed(2)}ms`);
+    // This blocks user interaction for the duration
+  }
+});
+
+observer.observe({ entryTypes: ['longtask'] });
+```
+
+In DevTools, long tasks appear as red bars in the timeline. Each one delays input response by its duration.
+
+### Rendering Pipeline
+
+The browser follows a strict pipeline per frame:
+
+1. **JavaScript** — Execute scripts
+2. **Layout** — Calculate element positions and sizes
+3. **Paint** — Fill pixels (colors, borders, shadows)
+4. **Composite** — Move pixel buffers to screen
+
+Avoid triggering layout during JavaScript execution:
+
+```javascript
+// Bad — forces reflow on every iteration
+for (let i = 0; i < items.length; i++) {
+  const height = items[i].offsetHeight; // Triggers layout
+  items[i].style.height = height + 10 + 'px';
+}
+
+// Good — batch reads, then batch writes
+let heights = [];
+for (let i = 0; i < items.length; i++) {
+  heights.push(items[i].offsetHeight); // Read all first
+}
+
+for (let i = 0; i < items.length; i++) {
+  items[i].style.height = heights[i] + 10 + 'px'; // Write all after
+}
+```
+
+## Memory Profiling
+
+Memory issues manifest as gradual slowdowns. Use heap snapshots to find leaks:
+
+### Common Leak Patterns
+
+```javascript
+// Forgotten event listeners
+document.addEventListener('scroll', () => {
+  console.log(scrollY); // Closure retains reference forever
+});
+
+// Orphaned DOM references
+const elements = [];
+function createElements() {
+  for (let i = 0; i < 100; i++) {
+    const el = document.createElement('div');
+    el.textContent = `Item ${i}`;
+    elements.push(el); // Array retains all elements even if removed from DOM
+  }
+}
+
+// Detached DOM trees
+function detach() {
+  const container = document.getElementById('app');
+  container.innerHTML = '<p>New content</p>';
+  // Old DOM nodes are detached but still referenced by garbage collection roots
+}
+```
+
+### Heap Snapshot Workflow
+
+1. Take a baseline snapshot
+2. Perform the suspected action (navigate, interact)
+3. Take another snapshot
+4. Compare — look for growing object counts
+
+## Web Vitals in Production
+
+Lab tools are great. Real-user data is better:
+
+```javascript
+import { getLCP, getFID, getCLS } from 'web-vitals';
+
+function sendMetric(name, value) {
+  // Send to your analytics endpoint
+  navigator.sendBeacon(`/analytics?name=${name}&value=${value}`);
+}
+
+getLCP(sendMetric);   // Largest Contentful Paint
+getFID(sendMetric);   // First Input Delay (deprecated — use INP)
+getCLS(sendMetric);   // Cumulative Layout Shift
+```
+
+## Optimization Checklist
+
+- [ ] **Reduce JavaScript**: Tree-shake, code-split, defer non-critical scripts
+- [ ] **Optimize images**: Use modern formats, responsive sizes, lazy loading
+- [ ] **Minimize layout thrashing**: Batch reads and writes together
+- [ ] **Use requestIdleCallback**: Defer non-urgent work
+- [ ] **Preload critical resources**: Fonts, above-the-fold images
+- [ ] **Defer third-party scripts**: Load after main content renders
+
+Performance profiling is iterative. Each measurement gives you a target. Fix the biggest bottleneck first — it usually has the highest impact on user experience.

@@ -1,0 +1,188 @@
+---
+title: Database Query Optimization
+description: Practical techniques for writing faster SQL queries, understanding execution plans, and designing efficient database schemas.
+pubDate: 2026-09-10
+tags: ["database", "sql", "performance"]
+draft: false
+featured: true
+---
+
+## The Cost of Slow Queries
+
+A single slow query can bottleneck an entire application. Understanding how databases execute queries lets you write code that's fast by design, not after optimization.
+
+### Query Lifecycle
+
+1. **Parse**: SQL string → abstract syntax tree
+2. **Optimize**: Choose the best execution plan
+3. **Execute**: Run the plan against data
+4. **Return**: Send results to client
+
+The optimizer makes decisions based on statistics. Outdated stats = bad plans.
+
+## Indexes: The Foundation
+
+Indexes are sorted references to data. They turn O(n) scans into O(log n) lookups:
+
+```sql
+-- Without index: Full table scan
+SELECT * FROM users WHERE email = 'alice@example.com';
+
+-- With index: B-tree lookup
+CREATE INDEX idx_users_email ON users(email);
+-- Query time: ~0.5ms → ~0.1ms
+```
+
+### Index Types
+
+| Type | Best For | Lookup Speed |
+|------|----------|-------------|
+| B-tree (default) | Equality, range queries | O(log n) |
+| Hash | Exact equality only | O(1) |
+| GiST | Full-text search, geometric | O(log n) |
+| BRIN | Time-series, sequential data | Very fast for ranges |
+
+## Execution Plans
+
+Always inspect the plan before optimizing:
+
+```sql
+EXPLAIN ANALYZE
+SELECT u.name, p.title
+FROM users u
+JOIN posts p ON u.id = p.author_id
+WHERE p.published_at > '2025-01-01'
+ORDER BY p.published_at DESC;
+```
+
+### Reading the Plan
+
+Look for these red flags:
+
+- **Seq Scan**: Full table scan (bad on large tables)
+- **Hash Join**: Could be improved with proper indexes
+- **Sort**: Expensive — avoid when possible
+- **Filter rows >> Total rows**: Over-fetching data
+
+## Query Patterns That Scale
+
+### Avoid N+1 Queries
+
+```javascript
+// Bad: One query per user
+const users = await db.users.findMany();
+for (const user of users) {
+  await db.posts.findMany({ where: { authorId: user.id } }); // N queries
+}
+
+// Good: Single join query
+const results = await db.$queryRaw`
+  SELECT u.name, p.title, p.published_at
+  FROM users u
+  JOIN posts p ON u.id = p.author_id
+  ORDER BY p.published_at DESC
+`;
+```
+
+### Pagination with Cursors
+
+Offset pagination breaks at scale:
+
+```sql
+-- Bad: OFFSET grows linearly slower
+SELECT * FROM products ORDER BY id LIMIT 20 OFFSET 100000;
+
+-- Good: Keyset pagination (constant time)
+SELECT * FROM products WHERE id > ? ORDER BY id LIMIT 20;
+-- Pass the last seen ID as the cursor
+```
+
+### Batch Operations
+
+```javascript
+// Bad: Individual inserts
+for (const item of items) {
+  await db.products.insert(item); // N round trips
+}
+
+// Good: Single batch insert
+await db.products.insertMany(items); // 1 round trip
+```
+
+## Schema Design for Performance
+
+### Normalization vs Denormalization
+
+```sql
+-- Normalized (3NF): More joins, smaller writes
+CREATE TABLE orders (
+  id SERIAL PRIMARY KEY,
+  user_id INT REFERENCES users(id),
+  total DECIMAL(10, 2)
+);
+
+CREATE TABLE order_items (
+  order_id INT REFERENCES orders(id),
+  product_id INT REFERENCES products(id),
+  quantity INT,
+  price DECIMAL(10, 2)
+);
+
+-- Denormalized: Fewer joins, larger writes
+CREATE TABLE orders (
+  id SERIAL PRIMARY KEY,
+  user_name VARCHAR(255), -- Redundant but avoids JOIN
+  total DECIMAL(10, 2),
+  item_count INT          -- Pre-computed aggregate
+);
+```
+
+Denormalize when reads >> writes. Normalize when data integrity matters more than speed.
+
+### Partial Indexes
+
+Index only what you query:
+
+```sql
+-- Only index active users (smaller index, faster lookups)
+CREATE INDEX idx_active_users ON users(email) WHERE status = 'active';
+
+-- Only index recent orders
+CREATE INDEX idx_recent_orders ON orders(created_at) WHERE created_at > NOW() - INTERVAL '30 days';
+```
+
+## Connection Pooling
+
+Database connections are expensive. Pool them:
+
+```javascript
+import { Pool } from 'pg';
+
+const pool = new Pool({
+  connectionString: process.env.DATABASE_URL,
+  max: 20,              // Max connections
+  idleTimeoutMillis: 30000,
+  reapapTimeoutMillis: 10000,
+});
+
+// Always use pool.query instead of client.query
+const result = await pool.query('SELECT * FROM users WHERE id = $1', [userId]);
+```
+
+## Monitoring Query Performance
+
+Track slow queries in production:
+
+```sql
+-- PostgreSQL: Enable query logging
+ALTER SYSTEM SET log_min_duration_statement = 100; -- Log queries > 100ms
+SELECT pg_reload_conf();
+
+-- Check slow queries
+SELECT query, calls, mean_time
+FROM pg_stat_statements
+ORDER BY mean_time DESC
+LIMIT 20;
+```
+
+Database performance is about making the right trade-offs. Indexes speed up reads but slow writes. Denormalization saves joins but wastes storage. Understanding these trade-offs lets you design systems that scale gracefully under load.

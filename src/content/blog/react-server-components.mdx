@@ -1,0 +1,146 @@
+---
+title: React Server Components Explained
+description: Understanding how React Server Components change the way we build React applications with Next.js.
+pubDate: 2026-05-15
+tags: ["react", "nextjs", "server-components"]
+draft: false
+featured: true
+---
+
+## The Problem with Client-Side Rendering
+
+Traditional React apps render everything on the client. This means shipping a JavaScript bundle for every page, even static content like headers and footers that never change. Server Components solve this by rendering UI on the server.
+
+### Before: Client-Side Only
+
+```javascript
+// All components run in the browser
+export default function Dashboard() {
+  const data = fetch('/api/data').then(r => r.json()); // client-side fetch
+  return <div>{data}</div>;
+}
+```
+
+Every component — even static ones — ships JavaScript to the client.
+
+## Server Components
+
+Components with `server` in their name (or no `"use client"` directive) run exclusively on the server:
+
+```javascript
+// app/products/page.js — implicitly a Server Component
+
+async function Products() {
+  // Direct database access, no API layer needed
+  const products = await db.query('SELECT * FROM products');
+  
+  return (
+    <div>
+      {products.map(product => (
+        <ProductCard key={product.id} product={product} />
+      ))}
+    </div>
+  );
+}
+
+export default Products;
+```
+
+The server renders the component to HTML and sends it to the client. Zero JavaScript is sent for this page.
+
+## Client Components
+
+Use `"use client"` when you need interactivity:
+
+```javascript
+'use client';
+
+import { useState } from 'react';
+
+export function SearchInput() {
+  const [query, setQuery] = useState('');
+  
+  return (
+    <input
+      value={query}
+      onChange={(e) => setQuery(e.target.value)}
+      placeholder="Search..."
+    />
+  );
+}
+```
+
+Client components are the exception — they're loaded as JavaScript bundles. The rule: **render on server, hydrate only what's interactive**.
+
+## Streaming with Suspense
+
+Server Components work seamlessly with React Suspense for progressive loading:
+
+```javascript
+import { Suspense } from 'react';
+
+export default function Dashboard() {
+  return (
+    <div>
+      <Header /> {/* Server Component — instant HTML */}
+      
+      <Suspense fallback={<LoadingSpinner />}>
+        <UserProfile userId={1} /> {/* Fetches data, streams when ready */}
+      </Suspense>
+      
+      <Suspense fallback={<LoadingSpinner />}>
+        <RecentActivity /> {/* Another independent fetch */}
+      </Suspense>
+    </div>
+  );
+}
+```
+
+Each `Suspense` boundary loads independently. The user sees content progressively without waiting for all data.
+
+## Data Fetching Patterns
+
+### Server-Side Direct Access
+
+```javascript
+// No API layer needed — direct access to resources
+async function BlogPost({ id }) {
+  const post = await db.posts.find(id);
+  
+  return (
+    <article>
+      <h1>{post.title}</h1>
+      <Markdown content={post.content} />
+    </article>
+  );
+}
+```
+
+### Client-Side Fetching with `use`
+
+When a Server Component needs to read client-side state:
+
+```javascript
+import { use } from 'react';
+
+async function UserDashboard({ userPromise }) {
+  const user = await userPromise; // Resolved on server
+  
+  return (
+    <div>
+      <h1>Welcome, {user.name}</h1>
+      <ClientChart data={await fetchChartData(user.id)} />
+    </div>
+  );
+}
+```
+
+## When to Use Each
+
+| Component Type | Use When |
+|---|---|
+| Server | Data fetching, static content, SEO-critical pages |
+| Client | `useState`, event handlers, browser APIs |
+| Mixed | Most pages — use Server Components as the container |
+
+Server Components shift the mental model from "everything is interactive" to "render first, hydrate selectively." This reduces bundle sizes dramatically and improves perceived performance.

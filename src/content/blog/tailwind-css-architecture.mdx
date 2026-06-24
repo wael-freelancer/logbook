@@ -1,0 +1,163 @@
+---
+title: CSS Architecture with Tailwind and Utility Classes
+description: Building maintainable, scalable stylesheets using utility-first CSS patterns and modern design systems.
+pubDate: 2026-07-01
+tags: ["css", "tailwind", "design-system"]
+draft: false
+featured: true
+---
+
+## The Utility-First Philosophy
+
+Utility-first CSS shifts from writing custom classes to composing existing ones. Instead of maintaining a stylesheet with hundreds of unique class names, you combine small, predictable utilities.
+
+### Traditional vs Utility CSS
+
+```html
+<!-- Traditional approach -->
+<div class="card">
+  <div class="card-header">
+    <h2 class="title">Title</h2>
+  </div>
+</div>
+
+<style>
+.card { padding: 1rem; border-radius: 0.5rem; }
+.card-header { margin-bottom: 1rem; }
+.title { font-size: 1.25rem; font-weight: bold; }
+</style>
+
+<!-- Utility-first approach -->
+<div class="p-4 rounded-lg">
+  <div class="mb-4">
+    <h2 class="text-xl font-bold">Title</h2>
+  </div>
+</div>
+```
+
+The utility version has no custom CSS. Every class is documented in the framework. No mental overhead for new developers.
+
+## Design Tokens with Tailwind
+
+Tailwind's configuration file defines your design system:
+
+```javascript
+// tailwind.config.js
+module.exports = {
+  theme: {
+    extend: {
+      colors: {
+        primary: {
+          50: '#f0f9ff',
+          100: '#e0f2fe',
+          500: '#0ea5e9',
+          600: '#0284c7',
+          700: '#0369a1',
+        },
+      },
+      fontFamily: {
+        sans: ['Inter', 'system-ui', 'sans-serif'],
+        mono: ['JetBrains Mono', 'monospace'],
+      },
+      spacing: {
+        '7.5': '1.875rem',
+        '12.5': '3.125rem',
+      },
+    },
+  },
+};
+```
+
+## Responsive Design Patterns
+
+Tailwind's responsive prefixes make mobile-first design natural:
+
+```html
+<!-- Mobile-first: base styles apply to all, md+ overrides -->
+<div class="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
+  <div class="p-4 bg-white rounded-lg shadow-sm hover:shadow-md transition-shadow">
+    <h3 class="text-lg font-semibold mb-2">Card Title</h3>
+    <p class="text-gray-600 text-sm sm:text-base">Description text adapts to viewport.</p>
+  </div>
+</div>
+
+<!-- Breakpoints: sm (640px), md (768px), lg (1024px), xl (1280px) -->
+```
+
+## Dark Mode
+
+Tailwind handles dark mode with a class strategy:
+
+```html
+<body class="bg-white text-gray-900 dark:bg-gray-900 dark:text-white">
+  <div class="p-6 bg-gray-50 dark:bg-gray-800 rounded-lg">
+    <h2 class="text-xl font-bold mb-4">Adaptive Colors</h2>
+    <p class="text-gray-700 dark:text-gray-300">Text color adjusts automatically.</p>
+  </div>
+  
+  <!-- Toggle with JavaScript -->
+  <button onclick="document.body.classList.toggle('dark')">Toggle Dark Mode</button>
+</body>
+```
+
+## Component Composition
+
+Build larger components from smaller utilities:
+
+```html
+<!-- Button variants through composition -->
+<button class="px-4 py-2 bg-primary-600 text-white rounded-lg hover:bg-primary-700 transition-colors focus:outline-none focus:ring-2 focus:ring-primary-500">
+  Primary Button
+</button>
+
+<button class="px-4 py-2 border border-gray-300 text-gray-700 rounded-lg hover:bg-gray-50 transition-colors">
+  Secondary Button
+</button>
+
+<!-- Card component -->
+<article class="bg-white rounded-xl shadow-sm border border-gray-100 overflow-hidden hover:shadow-md transition-shadow">
+  <img src="/hero.jpg" alt="Hero" class="w-full h-48 object-cover" />
+  <div class="p-6">
+    <h2 class="text-xl font-bold mb-2">Article Title</h2>
+    <p class="text-gray-600 mb-4">A brief description of the article content.</p>
+    <a href="/article" class="text-primary-600 hover:text-primary-700 font-medium">Read more →</a>
+  </div>
+</article>
+```
+
+## Avoiding Utility Overload
+
+When a pattern repeats, extract it into a custom class:
+
+```css
+/* In your CSS file */
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+/* Custom component classes for repeated patterns */
+.btn {
+  @apply px-4 py-2 rounded-lg font-medium transition-colors focus:outline-none focus:ring-2 focus:ring-primary-500;
+}
+
+.btn-primary {
+  @apply bg-primary-600 text-white hover:bg-primary-700;
+}
+
+.btn-secondary {
+  @apply border border-gray-300 text-gray-700 hover:bg-gray-50;
+}
+
+.card {
+  @apply bg-white rounded-xl shadow-sm border border-gray-100 overflow-hidden;
+}
+```
+
+## Best Practices
+
+- **Start with utilities** — only extract when patterns repeat 3+ times
+- **Use `@apply` sparingly** — it's for component classes, not inline styles
+- **Leverage arbitrary values** (`bg-[#ff6b00]`) for one-off designs
+- **Keep Tailwind config minimal** — let utilities do the heavy lifting
+
+Utility-first CSS scales because every class is predictable. New developers don't need to read your stylesheet — they can learn from the framework documentation and compose immediately.

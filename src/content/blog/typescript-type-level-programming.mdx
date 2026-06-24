@@ -1,0 +1,171 @@
+---
+title: TypeScript Type-Level Programming
+description: Pushing TypeScript's type system to its limits with conditional types, inference, and metaprogramming patterns.
+pubDate: 2026-07-15
+tags: ["typescript", "types", "metaprogramming"]
+draft: false
+featured: true
+---
+
+## Types as Computation
+
+TypeScript's type system is Turing-complete. You can encode logic, conditionals, and even recursion at the type level — all checked at compile time with zero runtime cost.
+
+### The Building Blocks
+
+```typescript
+// Conditional types: if-then-else at the type level
+type IsString<T> = T extends string ? true : false;
+
+type A = IsString<'hello'>;  // true
+type B = IsString<42>;        // false
+
+// Union distribution: conditionals distribute over unions
+type ToArray<T> = T extends any ? T[] : never;
+
+type Result = ToArray<string | number>; // (string | number)[]
+```
+
+## Type-Level Recursion
+
+You can recurse through tuples and strings at the type level:
+
+```typescript
+// Reverse a tuple
+type Reverse<T extends unknown[]> = 
+  T extends [infer First, ...infer Rest]
+    ? [...Reverse<Rest>, First]
+    : [];
+
+type Reversed = Reverse<[1, 2, 3]>; // [3, 2, 1]
+
+// Flatten nested tuples recursively
+type Flatten<T> = T extends [] 
+  ? []
+  : T extends [infer Head, ...infer Tail]
+    ? [...Head extends unknown[] ? Flatten<Head> : [Head], ...Flatten<Tail>]
+    : never;
+
+type Nested = [number[], string[], boolean[]];
+type Flat = Flatten<Nested>; // (number | string | boolean)[]
+```
+
+## Type-Level Strings
+
+Manipulate strings at the type level using template literal inference:
+
+```typescript
+// Extract route parameters from a URL pattern
+type ParamsOf<T extends string> = 
+  T extends `${string}/:${infer Param}/${infer Rest}`
+    ? [Param, ...ParamsOf<Rest>]
+    : T extends `${string}/:${infer Param}`
+      ? [Param]
+      : [];
+
+type Route1 = ParamsOf<'/users/:id'>;       // ["id"]
+type Route2 = ParamsOf<'/posts/:slug/comments/:commentId'>; // ["slug", "commentId"]
+
+// Build typed URLs from route definitions
+type RouteDef = '/users/:id' | '/posts/:slug';
+
+function getUrl<T extends RouteDef>(route: T): string {
+  return route; // Type-safe URL generation
+}
+
+const url1 = getUrl('/users/42');   // OK — matches '/users/:id'
+```
+
+## Typed APIs with Inference
+
+Use inference to create self-documenting APIs:
+
+```typescript
+// API response types inferred from the request
+type ApiResponse<T> = T extends 'user' 
+  ? { id: number; name: string; email: string }
+  : T extends 'post'
+    ? { id: number; title: string; content: string; authorId: number }
+    : never;
+
+declare function fetchResource<K extends keyof ApiResponse>(
+  resource: K
+): Promise<ApiResponse<K>>;
+
+// Usage — return type is inferred from the argument
+const user = await fetchResource('user');
+//      ^? { id: number; name: string; email: string }
+
+const post = await fetchResource('post');
+//       ^? { id: number; title: string; content: string; authorId: number }
+```
+
+## Type-Level Numbers
+
+You can encode numbers as tuples and perform arithmetic:
+
+```typescript
+type Zero = [];
+type Succ<T extends unknown[]> = [...T, 1];
+
+type One = Succ<Zero>;       // [1]
+type Two = Succ<One>;        // [1, 1]
+type Three = Succ<Two>;      // [1, 1, 1]
+
+// Addition by extending tuples
+type Add<A extends unknown[], B extends unknown[]> = 
+  [...A, ...B];
+
+type Sum = Add<[1, 1], [1, 1, 1]>; // [1, 1, 1, 1, 1] (5)
+
+// Type-level modulo
+type Modulo<N extends unknown[], D extends unknown[]> = 
+  N['length'] extends infer L 
+    ? L extends number 
+      ? D['length'] extends infer DL 
+        ? DL extends number 
+          ? L % DL 
+          : never 
+        : never 
+      : never 
+  : never;
+```
+
+## Practical Use Cases
+
+### Typed Event Emitters
+
+```typescript
+type Events = {
+  click: [x: number, y: number];
+  scroll: { delta: number };
+  resize: { width: number; height: number };
+};
+
+declare function emit<K extends keyof Events>(event: K, ...args: Events[K]): void;
+declare function on<K extends keyof Events>(event: K, fn: (...args: Events[K]) => void): void;
+
+emit('click', 100, 200); // Type-safe — must pass two numbers
+on('scroll', ({ delta }) => console.log(delta)); // Correctly inferred
+```
+
+### Typed Form Validation
+
+```typescript
+type Validate<T> = {
+  [K in keyof T]: T[K] extends string ? string : 
+    T[K] extends number ? number : 
+      T[K] extends boolean ? boolean : never;
+};
+
+interface FormData {
+  name: string;
+  age: number;
+  active: boolean;
+}
+
+const form = {} as Validate<FormData>;
+//      ^? { name: string; age: number; active: boolean }
+```
+
+Type-level programming in TypeScript turns the compiler into a verification tool. Complex constraints that would require runtime validation are checked at build time, catching errors before they reach production.

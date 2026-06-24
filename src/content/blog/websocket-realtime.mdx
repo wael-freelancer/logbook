@@ -1,0 +1,255 @@
+---
+title: Real-Time Apps with WebSockets
+description: Building responsive, bidirectional communication systems using WebSocket protocols and modern patterns.
+pubDate: 2026-10-10
+tags: ["websocket", "real-time", "networking"]
+draft: false
+featured: true
+---
+
+## Why WebSockets?
+
+HTTP is request-response by design. When you need instant updates — chat, live dashboards, collaborative editing — polling HTTP endpoints wastes bandwidth and adds latency. WebSockets provide a persistent, bidirectional connection.
+
+### The Connection Model
+
+```
+Client                          Server
+  |--- CONNECT /ws ---|>
+  |<--- 101 Switching ---|
+  |                     |
+  |--- {"type": "msg", "text": "hi"} --->|
+  |<--- {"type": "msg", "text": "hello!"} --|
+  |                     |
+  |--- CLOSE ---------->|
+```
+
+## Server Implementation with Node.js
+
+```javascript
+import { WebSocketServer, WebSocket } from 'ws';
+
+const wss = new WebSocketServer({ port: 8080 });
+
+// Track connected clients
+const clients = new Map(); // userId -> WebSocket
+
+wss.on('connection', (ws) => {
+  ws.userId = null;
+  
+  // Authenticate on first message
+  ws.on('message', async (data) => {
+    const message = JSON.parse(data);
+    
+    if (message.type === 'auth') {
+      const user = await authenticate(message.token);
+      if (!user) {
+        ws.send(JSON.stringify({ type: 'error', code: 401 }));
+        return;
+      }
+      ws.userId = user.id;
+      clients.set(user.id, ws);
+      
+      // Notify others
+      broadcastToRoom(ws.userId, {
+        type: 'user_joined',
+        userId: user.id,
+      });
+    } else if (message.type === 'chat') {
+      const chatMsg = {
+        type: 'chat',
+        userId: ws.userId,
+        text: message.text,
+        timestamp: Date.now(),
+      };
+      
+      broadcastToRoom(ws.userId, chatMsg);
+    }
+  });
+  
+  ws.on('close', () => {
+    if (ws.userId) clients.delete(ws.userId);
+  });
+});
+
+function broadcastToRoom(userId, message) {
+  const data = JSON.stringify(message);
+  
+  // Send to all connected clients
+  for (const [, client] of clients) {
+    if (client.readyState === WebSocket.OPEN) {
+      client.send(data);
+    }
+  }
+}
+```
+
+## Client Implementation
+
+```javascript
+class WebSocketClient {
+  constructor(url) {
+    this.ws = new WebSocket(url);
+    this.handlers = new Map();
+    this.reconnectDelay = 1000;
+    
+    this.ws.onopen = () => {
+      console.log('Connected');
+      this.reconnectDelay = 1000; // Reset on successful connection
+    };
+    
+    this.ws.onmessage = (event) => {
+      const message = JSON.parse(event.data);
+      this.handlers.get(message.type)?.(message);
+    };
+    
+    this.ws.onclose = () => {
+      console.log('Disconnected — reconnecting...');
+      setTimeout(() => this.reconnect(), this.reconnectDelay);
+      this.reconnectDelay *= 2; // Exponential backoff
+    };
+    
+    this.ws.onerror = (err) => {
+      console.error('WebSocket error:', err);
+    };
+  }
+  
+  reconnect() {
+    this.ws = new WebSocket(this.ws.url);
+    this.setupListeners();
+  }
+  
+  setupListeners() {
+    this.ws.onopen = () => {
+      console.log('Reconnected');
+      this.reconnectDelay = 1000;
+    };
+    
+    this.ws.onmessage = (event) => {
+      const message = JSON.parse(event.data);
+      this.handlers.get(message.type)?.(message);
+    };
+    
+    this.ws.onclose = () => {
+      setTimeout(() => this.reconnect(), this.reconnectDelay);
+      this.reconnectDelay *= 2;
+    };
+  }
+  
+  on(type, handler) {
+    if (!this.handlers.has(type)) {
+      this.handlers.set(type, []);
+    }
+    this.handlers.get(type).push(handler);
+  }
+  
+  send(type, payload) {
+    this.ws.send(JSON.stringify({ type, ...payload }));
+  }
+}
+
+// Usage
+const client = new WebSocketClient('wss://example.com/ws');
+
+client.on('chat', (msg) => {
+  appendMessage(msg.userId, msg.text);
+});
+
+client.on('user_joined', (msg) => {
+  showNotification(`${msg.userId} joined`);
+});
+
+// Send a message
+client.send('auth', { token: 'jwt-token' });
+client.send('chat', { text: 'Hello!' });
+```
+
+## Broadcasting to Rooms
+
+For targeted messaging, group clients into rooms:
+
+```javascript
+const rooms = new Map(); // roomName -> Set<WebSocket>
+
+function joinRoom(ws, room) {
+  if (!rooms.has(room)) rooms.set(room, new Set());
+  rooms.get(room).add(ws);
+  
+  ws.on('close', () => {
+    rooms.get(room)?.delete(ws);
+  });
+}
+
+function broadcastToRoom(roomName, message) {
+  const data = JSON.stringify(message);
+  const clients = rooms.get(roomName);
+  
+  if (!clients) return;
+  
+  for (const client of clients) {
+    if (client.readyState === WebSocket.OPEN) {
+      client.send(data);
+    }
+  }
+}
+
+// Usage: join a chat room
+wss.on('connection', (ws) => {
+  ws.on('message', async (data) => {
+    const msg = JSON.parse(data);
+    
+    if (msg.type === 'join') {
+      joinRoom(ws, msg.room);
+    } else if (msg.type === 'chat' && rooms.has(msg.room)) {
+      broadcastToRoom(msg.room, {
+        type: 'chat',
+        userId: ws.userId,
+        text: msg.text,
+        room: msg.room,
+      });
+    }
+  });
+});
+```
+
+## Scaling with Redis Pub/Sub
+
+Single servers don't scale. Use Redis to bridge multiple instances:
+
+```javascript
+import { createClient } from 'redis';
+
+const pub = createClient();
+const sub = createClient();
+
+await Promise.all([pub.connect(), sub.connect()]);
+
+sub.on('message', async (channel, message) => {
+  const msg = JSON.parse(message);
+  
+  // Forward to connected WebSocket clients on this server
+  for (const [, client] of clients) {
+    if (client.readyState === WebSocket.OPEN) {
+      client.send(JSON.stringify(msg));
+    }
+  }
+});
+
+async function broadcast(channel, message) {
+  await pub.publish(channel, JSON.stringify(message));
+}
+
+// When a user sends a message on Server A:
+await broadcast('chat-room-1', { type: 'chat', text: 'Hello!' });
+// Redis forwards it to all servers subscribed to 'chat-room-1'
+```
+
+## Security Considerations
+
+- **Validate every message** — treat WebSocket input like HTTP body
+- **Rate limit connections** per IP to prevent abuse
+- **Use TLS (wss://)** in production — never unencrypted WebSocket
+- **Authenticate before accepting messages** — reject until authenticated
+- **Sanitize output** — prevent XSS through user-generated content
+
+WebSockets transform web applications from passive consumers into active participants. Combined with proper scaling patterns, they enable real-time experiences that feel instant regardless of network conditions.
