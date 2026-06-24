@@ -1,0 +1,56 @@
+---
+title: E-Commerce Dashboard
+description: A real-time analytics dashboard for online stores with live sales tracking and inventory management.
+tags: ["react", "typescript", "nextjs"]
+status: active
+featured: true
+order: 3
+liveUrl: "https://dashboard.example.com"
+repoUrl: "https://github.com/user/ecommerce-dashboard"
+startDate: 2025-08-15
+---
+
+## Overview
+
+A comprehensive analytics dashboard built for e-commerce platforms, providing real-time insights into sales performance, inventory levels, and customer behavior patterns.
+
+### Key Features
+
+- **Real-time analytics**: Live sales tracking with WebSocket updates
+- **Inventory management**: Automated stock alerts and reorder suggestions
+- **Customer segmentation**: Behavioral analysis and cohort reporting
+- **Revenue forecasting**: ML-powered predictions based on historical data
+
+### Architecture
+
+The dashboard uses a server-first approach with React islands for interactive components. Data flows through a centralized store pattern, ensuring consistency across all views. The charting library is configured with custom theming to match the brand identity.
+
+```typescript
+interface DashboardMetrics {
+  revenue: number;
+  orders: number;
+  customers: number;
+  conversionRate: number;
+}
+
+function useDashboardData() {
+  const [metrics, setMetrics] = useState<DashboardMetrics>({
+    revenue: 0,
+    orders: 0,
+    customers: 0,
+    conversionRate: 0,
+  });
+
+  useEffect(() => {
+    const ws = new WebSocket('wss://api.example.com/dashboard');
+    ws.onmessage = (event) => setMetrics(JSON.parse(event.data));
+    return () => ws.close();
+  }, []);
+
+  return metrics;
+}
+```
+
+### Design Decisions
+
+The team chose React Server Components for data-heavy views, reducing client bundle size by 60%. Interactive charts use a custom WebGL renderer instead of SVG to handle thousands of data points smoothly. The layout system uses CSS Grid with named areas for clean responsive behavior across breakpoints.

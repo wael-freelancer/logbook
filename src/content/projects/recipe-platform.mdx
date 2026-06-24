@@ -1,0 +1,60 @@
+---
+title: Recipe Sharing Platform
+description: A community-driven recipe platform with step-by-step cooking instructions, ingredient scaling, and meal planning.
+tags: ["ruby", "rails", "postgresql"]
+status: archived
+featured: false
+order: 8
+liveUrl: "https://recipes.example.com"
+repoUrl: "https://github.com/user/recipe-platform"
+startDate: 2024-06-01
+endDate: 2025-04-30
+---
+
+## Overview
+
+A social cooking platform where users share recipes, plan weekly meals, and adjust ingredient quantities automatically. Built with Ruby on Rails and deployed as a fully functional web application before being archived due to shifting priorities.
+
+### Key Features
+
+- **Ingredient scaling**: Automatic quantity adjustment for serving size changes (2x, 4x, etc.)
+- **Meal planning calendar**: Drag-and-drop weekly planner with grocery list generation
+- **Photo uploads**: Optimized image processing with Active Storage and CDN delivery
+- **Community features**: Comments, ratings, and follower system
+
+### Architecture
+
+The platform follows a traditional Rails MVC pattern with PostgreSQL as the primary database. Ingredient scaling is implemented through a custom model method that parses measurement strings (e.g., "2 cups flour") and adjusts quantities proportionally. The meal planner uses a JavaScript-based drag-and-drop interface backed by a JSON API.
+
+```ruby
+# Example: Recipe ingredient scaling
+class Recipe < ApplicationRecord
+  has_many :instructions, dependent: :destroy
+  has_many :ingredients, dependent: :destroy
+
+  def scaled_ingredients(servings)
+    base_servings = self.servings.to_i || 1
+    ratio = servings.to_f / base_servings
+
+    ingredients.map do |ingredient|
+      parsed = parse_measurement(ingredient.quantity_string)
+      adjusted = parsed.map { |val| val * ratio }
+      ingredient.assign_attributes(quantity_string: format_measurements(adjusted))
+    end
+  end
+
+  private
+
+  def parse_measurement(str)
+    str.scan(/[\d.]+/).map(&:to_f)
+  end
+
+  def format_measurements(values)
+    values.map { |v| v % 1 == 0 ? v.to_s : "%.2f" % v }.join(' ')
+  }
+end
+```
+
+### Design Decisions
+
+Rails was chosen for its convention-over-configuration approach, which accelerated development of the initial MVP. PostgreSQL's JSONB columns store flexible ingredient formats without schema migrations. The project was archived after the team decided to focus on internal tooling instead of consumer-facing applications.

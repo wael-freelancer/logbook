@@ -13,9 +13,9 @@ Live status of every task. Update this file as work progresses. The agent reads 
 
 ## Current Status
 
-**Active Phase:** Phase 3 — Projects Section
+**Active Phase:** Phase 4 — Home Page & Remaining Pages
 **Last Updated:** June 24, 2026
-**Last Completed Task:** Phase 2 — Content Collections & Blog Engine
+**Last Completed Task:** Phase 3 — Projects Section
 **Current Blocker:** None
 
 ---
@@ -119,22 +119,24 @@ Live status of every task. Update this file as work progresses. The agent reads 
 
 ## Phase 3 — Projects Section
 
-**Status:** 🔲 Not Started
+**Status:** ✅ Complete
 **Depends on:** Phase 2 Gate
 
-- [ ] `src/lib/projects.ts` — getFeaturedProjects, getAllProjects, getProjectsByTag
-- [ ] `src/pages/projects/index.astro` — grid with filter
-- [ ] `src/pages/projects/[slug].astro` — case study
-- [ ] `src/components/projects/ProjectCard.astro`
-- [ ] `src/components/projects/ProjectGrid.astro`
-- [ ] `src/components/projects/TechBadge.astro`
-- [ ] Create 4+ real/sample project entries
-- [ ] Verify project grid tag filtering works
-- [ ] Verify all project slugs resolve
-- [ ] Verify images are optimized (Astro Image)
-- [ ] Verify mobile layout reads well
+- [x] `src/lib/projects.ts` — getFeaturedProjects, getAllProjects, getProjectsByTag
+- [x] `src/pages/projects/index.astro` — grid with filter
+- [x] `src/pages/projects/[slug].astro` — case study
+- [x] `src/components/projects/ProjectCard.astro`
+- [x] `src/components/projects/ProjectGrid.astro`
+- [x] `src/components/projects/TechBadge.astro`
+- [x] Create 9 real/sample project entries (portfolio-website, cli-tool, ecommerce-dashboard, design-system, weather-viz, markdown-notes, api-gateway, recipe-platform, chat-app)
+- [x] Verify project grid tag filtering works (21 tags generated across all projects)
+- [x] Verify all project slugs resolve (9 projects + index + 21 tag pages = 31 routes)
+- [~] Verify images are optimized (Astro Image) — no cover images yet, schema simplified in Phase 2
+- [x] Verify mobile layout reads well
 
 **Phase 3 Gate:** ✅ Projects section complete, all routes resolve
+
+> **Notes:** Build generates 31 project-related routes across 9 projects. Tag pages auto-discovered from content. Status labels mapped (active/archived/wip). 4 featured, 5 not featured. Related projects feature shares tags with blog's related posts logic. New projects: weather-viz (JavaScript/D3), markdown-notes (Electron/SQLite), api-gateway (Go/microservices), recipe-platform (Ruby/Rails, archived), chat-app (Python/WebSocket).
 
 ---
 

@@ -1,0 +1,65 @@
+---
+title: Weather Visualization App
+description: An interactive weather dashboard with animated maps, historical data charts, and location-based forecasts.
+tags: ["javascript", "d3", "api"]
+status: active
+featured: false
+order: 5
+liveUrl: "https://weather-viz.example.com"
+repoUrl: "https://github.com/user/weather-viz"
+startDate: 2025-03-10
+---
+
+## Overview
+
+A visually rich weather application that transforms raw meteorological data into interactive visualizations. Built with vanilla JavaScript and D3.js for rendering, it fetches real-time forecasts from multiple API providers and displays them through animated maps and time-series charts.
+
+### Key Features
+
+- **Animated weather maps**: Radar-style precipitation overlays using Canvas rendering
+- **Historical comparisons**: Year-over-year temperature and rainfall trends
+- **Multi-provider fallback**: Graceful degradation across OpenWeather, WeatherAPI, and NOAA sources
+- **PWA support**: Offline caching of recent forecasts with service workers
+
+### Architecture
+
+The app follows a modular pattern where each visualization is an independent module. Data flows through a central store that handles API abstraction, caching, and error recovery. D3 selections are managed with proper lifecycle hooks to prevent memory leaks during route transitions.
+
+```javascript
+// Example: Weather data fetcher with retry logic
+class WeatherClient {
+  constructor(apiKey) {
+    this.apiKey = apiKey;
+    this.cache = new Map();
+  }
+
+  async fetchForecast(city, days = 7) {
+    const cacheKey = `${city}-${days}`;
+    if (this.cache.has(cacheKey)) return this.cache.get(cacheKey);
+
+    try {
+      const response = await fetch(
+        `https://api.weather.com/forecast?city=${city}&days=${days}`,
+        { headers: { 'Authorization': `Bearer ${this.apiKey}` } }
+      );
+      const data = await response.json();
+      this.cache.set(cacheKey, data);
+      return data;
+    } catch (error) {
+      console.warn('Weather API failed, using fallback:', error.message);
+      return this.fetchFallback(city, days);
+    }
+  }
+
+  async fetchFallback(city, days = 7) {
+    const response = await fetch(
+      `https://fallback.weather-api.com/data?city=${city}`
+    );
+    return response.json();
+  }
+}
+```
+
+### Design Decisions
+
+The team chose D3 over charting libraries like Chart.js because of the need for highly customized geographic visualizations. The Canvas-based map renderer handles thousands of data points at 60fps without the overhead of SVG DOM manipulation. Service workers cache forecast data for offline access, making the app functional even in areas with poor connectivity.

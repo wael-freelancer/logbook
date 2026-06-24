@@ -1,0 +1,62 @@
+---
+import { getCollection } from 'astro:content';
+import BaseLayout from '@/layouts/Base.astro';
+import Header from '@/components/layout/Header.astro';
+import Footer from '@/components/layout/Footer.astro';
+import ProjectCard from '@/components/projects/ProjectCard.astro';
+
+export async function getStaticPaths() {
+  const projects = await getCollection('projects');
+  const tags = new Set<string>();
+  for (const project of projects) {
+    for (const tag of project.data.tags) {
+      tags.add(tag.toLowerCase().replace(/\s+/g, '-'));
+    }
+  }
+  return Array.from(tags).map((tag) => ({
+    params: { tag },
+    props: { tag },
+  }));
+}
+
+const { tag } = Astro.props;
+const allProjects = await getCollection('projects');
+const sorted = allProjects.sort((a, b) => a.data.order - b.data.order);
+const filtered = sorted.filter((project) =>
+  project.data.tags.some((t: string) => t.toLowerCase().replace(/\s+/g, '-') === tag)
+);
+
+const displayTag = filtered[0]?.data.tags.find(
+  (t: string) => t.toLowerCase().replace(/\s+/g, '-') === tag
+) ?? tag;
+---
+
+<BaseLayout title={`${displayTag} projects — Projects — Log Book`} description={`Projects tagged with "${displayTag}".`}>
+  <Header />
+  <main id="main-content">
+    <div class="mx-auto w-full max-w-screen-xl px-4 sm:px-6 lg:px-8 py-12 lg:py-20">
+      <div class="mb-10">
+        <a href="/projects" class="text-sm text-text-secondary hover:text-text transition-colors">
+          ← Back to all projects
+        </a>
+        <h1 class="mt-4 font-display text-3xl font-semibold tracking-tight text-text sm:text-4xl">
+          Projects tagged: <span class="text-primary">{displayTag}</span>
+        </h1>
+        <p class="mt-2 text-text-secondary">{filtered.length} project{filtered.length !== 1 ? 's' : ''}</p>
+      </div>
+
+      {filtered.length > 0 ? (
+        <div class="grid gap-6 sm:grid-cols-2 lg:grid-cols-3">
+          {filtered.map((project) => (
+            <ProjectCard project={project} />
+          ))}
+        </div>
+      ) : (
+        <div class="rounded-lg border border-border bg-surface p-10 text-center">
+          <p class="text-text-secondary">No projects found with this tag.</p>
+        </div>
+      )}
+    </div>
+  </main>
+  <Footer />
+</BaseLayout>

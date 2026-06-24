@@ -1,0 +1,164 @@
+---
+import { getEntry, getCollection, render } from 'astro:content';
+import BaseLayout from '@/layouts/Base.astro';
+import Header from '@/components/layout/Header.astro';
+import Footer from '@/components/layout/Footer.astro';
+import Prose from '@/components/ui/Prose.astro';
+import { formatDate } from '@/lib/utils';
+import { getRelatedProjects } from '@/lib/projects';
+
+export async function getStaticPaths() {
+  const projects = await getCollection('projects');
+  return projects.map((project) => ({
+    params: { slug: project.id },
+    props: { project },
+  }));
+}
+
+const { project } = Astro.props;
+const { Content, headings } = await render(project);
+const related = await getRelatedProjects(project);
+const headingsList = headings?.map((h: { depth: number; text: string; slug: string }) => ({
+  depth: h.depth,
+  text: h.text,
+  id: h.slug,
+})) ?? [];
+
+const statusLabels = {
+  active: 'Active',
+  archived: 'Archived',
+  wip: 'In Progress',
+};
+---
+
+<BaseLayout title={`${project.data.title} — Projects — Log Book`} description={project.data.description}>
+  <Header />
+  <main id="main-content">
+    <article class="mx-auto w-full max-w-screen-xl px-4 sm:px-6 lg:px-8">
+      <div class="grid grid-cols-1 gap-x-8 lg:grid-cols-[1fr_256px]">
+        <!-- Article column -->
+        <div class="min-w-0 py-12">
+          <!-- Project header -->
+          <header class="mb-10">
+            <h1 class="font-display text-4xl font-semibold tracking-tight text-text sm:text-5xl">
+              {project.data.title}
+            </h1>
+
+            <div class="mt-4 flex flex-wrap items-center gap-3 text-sm text-text-secondary">
+              <!-- Status -->
+              {project.data.status && (
+                <>
+                  <span class="inline-flex items-center rounded-full bg-primary/10 px-2.5 py-0.5 text-xs font-medium text-primary capitalize">
+                    {statusLabels[project.data.status] ?? project.data.status}
+                  </span>
+                  <span aria-hidden="true">·</span>
+                </>
+              )}
+
+              <!-- Start date -->
+              <time datetime={project.data.startDate.toISOString()}>
+                Started {formatDate(project.data.startDate)}
+              </time>
+
+              <!-- End date -->
+              {project.data.endDate && (
+                <>
+                  <span aria-hidden="true">·</span>
+                  <time datetime={project.data.endDate.toISOString()}>
+                    Ended {formatDate(project.data.endDate)}
+                  </time>
+                </>
+              )}
+
+              <!-- Links -->
+              {project.data.liveUrl && (
+                <>
+                  <span aria-hidden="true">·</span>
+                  <a href={project.data.liveUrl} target="_blank" rel="noopener noreferrer" class="text-primary hover:underline">
+                    Live Demo
+                  </a>
+                </>
+              )}
+
+              {project.data.repoUrl && (
+                <>
+                  <span aria-hidden="true">·</span>
+                  <a href={project.data.repoUrl} target="_blank" rel="noopener noreferrer" class="text-primary hover:underline">
+                    Source Code
+                  </a>
+                </>
+              )}
+            </div>
+
+            <!-- Tags -->
+            {project.data.tags.length > 0 && (
+              <div class="mt-4 flex flex-wrap gap-2">
+                {project.data.tags.map((tag: string) => (
+                  <a
+                    href={`/projects/tags/${tag.toLowerCase().replace(/\s+/g, '-')}`}
+                    class="inline-flex items-center rounded-full bg-surface-2 px-2.5 py-0.5 text-xs font-medium text-text-secondary transition-colors hover:bg-primary/10 hover:text-primary"
+                  >
+                    {tag}
+                  </a>
+                ))}
+              </div>
+            )}
+          </header>
+
+          <!-- Content -->
+          <Prose>
+            <Content />
+          </Prose>
+
+          <!-- Related projects -->
+          {related.length > 0 && (
+            <section class="mt-16 border-t border-border pt-10">
+              <h2 class="mb-6 font-display text-2xl font-semibold tracking-tight text-text">
+                Related Projects
+              </h2>
+              <div class="grid gap-6 sm:grid-cols-2 lg:grid-cols-3">
+                {related.map((relatedProject) => (
+                  <a
+                    href={`/projects/${relatedProject.id}`}
+                    class="group rounded-lg border border-border bg-surface p-5 transition-all hover:shadow-md"
+                  >
+                    <h3 class="font-semibold text-text group-hover:text-primary transition-colors">
+                      {relatedProject.data.title}
+                    </h3>
+                    <p class="mt-2 text-sm text-text-secondary line-clamp-2">
+                      {relatedProject.data.description}
+                    </p>
+                  </a>
+                ))}
+              </div>
+            </section>
+          )}
+        </div>
+
+        <!-- TOC sidebar -->
+        {headingsList.length > 0 && (
+          <aside class="hidden lg:block pt-12" aria-label="Table of contents">
+            <nav class="sticky top-24 max-h-[calc(100vh-8rem)] overflow-y-auto">
+              <h3 class="mb-4 text-sm font-semibold text-text-secondary uppercase tracking-wide">
+                Contents
+              </h3>
+              <ul class="space-y-1 border-l border-border pl-4">
+                {headingsList.map((heading: { depth: number; text: string; id: string }) => (
+                  <li>
+                    <a
+                      href={`#${heading.id}`}
+                      class={`block py-1 text-sm leading-relaxed text-text-secondary transition-colors hover:text-text ${heading.depth === 3 ? 'pl-3' : ''}`}
+                    >
+                      {heading.text}
+                    </a>
+                  </li>
+                ))}
+              </ul>
+            </nav>
+          </aside>
+        )}
+      </div>
+    </article>
+  </main>
+  <Footer />
+</BaseLayout>

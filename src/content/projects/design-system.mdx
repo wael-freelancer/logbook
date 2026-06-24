@@ -1,0 +1,52 @@
+---
+title: Design System Toolkit
+description: A comprehensive component library with documentation site, token management, and accessibility-first approach.
+tags: ["typescript", "react", "design-system"]
+status: active
+featured: true
+order: 4
+repoUrl: "https://github.com/user/design-system"
+startDate: 2025-06-01
+endDate: 2025-12-15
+---
+
+## Overview
+
+A production-ready design system providing reusable UI components, design tokens, and comprehensive documentation. Built for scalability across multiple product teams with accessibility as a first-class concern.
+
+### Key Features
+
+- **Component library**: 40+ accessible components following WAI-ARIA guidelines
+- **Design token pipeline**: Automated token generation from CSS custom properties
+- **Storybook integration**: Interactive examples with code snippets
+- **Visual regression testing**: Percy snapshots for component changes
+
+### Architecture
+
+The toolkit uses a monorepo structure with Turborepo managing builds. Components are distributed as an ESM-first package with tree-shaking support. The token pipeline converts design tokens from Figma variables into TypeScript types and CSS custom properties automatically.
+
+```typescript
+// Example: Accessible button component
+interface ButtonProps {
+  variant?: 'primary' | 'secondary' | 'ghost';
+  size?: 'sm' | 'md' | 'lg';
+  isLoading?: boolean;
+  disabled?: boolean;
+}
+
+function Button({ variant = 'primary', size = 'md', ...props }: ButtonProps) {
+  const baseClasses = cn(
+    'inline-flex items-center justify-center rounded-lg font-medium transition-all',
+    getVariantClass(variant),
+    getSizeClass(size)
+  );
+
+  return (
+    <button className={baseClasses} {...props} />
+  );
+}
+```
+
+### Accessibility Implementation
+
+Every component undergoes automated axe testing and manual screen reader verification. Focus management follows a consistent pattern: visible focus rings, logical tab order, and skip links for keyboard navigation. The design system ships with built-in contrast ratio validation that fails the build if WCAG AA thresholds aren't met.

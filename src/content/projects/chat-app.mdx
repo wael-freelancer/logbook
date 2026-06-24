@@ -1,0 +1,67 @@
+---
+title: Real-time Chat Application
+description: A WebSocket-based chat app with channels, message threading, and end-to-end encryption.
+tags: ["python", "websocket", "encryption"]
+status: wip
+featured: false
+order: 9
+repoUrl: "https://github.com/user/chat-app"
+startDate: 2026-03-01
+---
+
+## Overview
+
+A privacy-focused messaging application supporting public channels, private rooms, and threaded conversations. Built with Python's asyncio framework for high-throughput WebSocket handling and optional end-to-end encryption using the Signal Protocol.
+
+### Key Features
+
+- **Channel system**: Organized discussions with topic-based routing and read receipts
+- **Message threading**: Inline replies with notification support and collapse/expand toggles
+- **E2E encryption**: Optional AES-256 encryption with key exchange via Diffie-Hellman
+- **File sharing**: Drag-and-drop uploads with preview thumbnails and download tracking
+
+### Architecture
+
+The server uses FastAPI's WebSocket support to handle real-time message delivery. Client-side encryption is implemented in a service worker that intercepts send/receive operations. Message history is stored in PostgreSQL with partitioning by channel for efficient querying.
+
+```python
+# Example: WebSocket message handler
+class ChatManager:
+    def __init__(self):
+        self.connections = defaultdict(set)  # channel -> set[WebSocket]
+        self.encryption_keys = {}  # user_id -> encryption_key
+
+    async def connect(self, websocket: WebSocket, channel: str):
+        await websocket.accept()
+        self.connections[channel].add(websocket)
+
+    async def disconnect(self, websocket: WebSocket, channel: str):
+        self.connections[channel].discard(websocket)
+
+    async def broadcast(self, channel: str, message: dict):
+        payload = json.dumps(message).encode()
+        tasks = []
+        for connection in self.connections.get(channel, set()):
+            try:
+                tasks.append(connection.send_bytes(payload))
+            except Exception:
+                pass
+        await asyncio.gather(*tasks, return_exceptions=True)
+
+    async def handle_encrypted_message(self, user_id: str, encrypted_data: bytes):
+        key = self.encryption_keys.get(user_id)
+        if not key:
+            raise ValueError("No encryption key for user")
+
+        decrypted = aes_decrypt(key, encrypted_data)
+        message = json.loads(decrypted.decode())
+        await self.broadcast(message["channel"], {
+            "type": "encrypted_message",
+            "sender": user_id,
+            "timestamp": datetime.utcnow().isoformat(),
+        })
+```
+
+### Design Decisions
+
+Python's asyncio ecosystem was chosen for its mature WebSocket libraries and clean concurrency model. The Signal Protocol implementation provides battle-tested encryption without reinventing cryptographic primitives. PostgreSQL partitioning by channel keeps query performance predictable as message volume grows across thousands of channels.

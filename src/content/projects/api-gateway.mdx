@@ -1,0 +1,79 @@
+---
+title: API Gateway Service
+description: A lightweight API gateway with rate limiting, authentication middleware, and request logging.
+tags: ["go", "microservices", "api"]
+status: wip
+featured: false
+order: 7
+repoUrl: "https://github.com/user/api-gateway"
+startDate: 2026-01-15
+---
+
+## Overview
+
+A production-ready API gateway designed for microservice architectures. Handles authentication, rate limiting, request transformation, and observability in a single deployable binary written in Go.
+
+### Key Features
+
+- **Rate limiting**: Token bucket algorithm with per-client and global limits
+- **JWT authentication**: Pluggable middleware supporting multiple providers (Auth0, Firebase, custom)
+- **Request logging**: Structured JSON logs with correlation IDs for distributed tracing
+- **Route transformation**: URL rewriting, header injection, and response body modification
+
+### Architecture
+
+The gateway is built as a chain of middlewares using Go's standard library patterns. Each middleware implements the `http.Handler` interface, allowing composable request processing pipelines. Configuration is loaded from YAML files with hot-reload support via filesystem watchers.
+
+```go
+// Example: Rate limiter middleware
+type RateLimiter struct {
+    limiter *tokenbucket.TokenBucket
+    client  *redis.Client
+}
+
+func (rl *RateLimiter) ServeMiddleware(next http.Handler) http.Handler {
+    return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+        key := r.Header.Get("X-Client-ID")
+        if key == "" {
+            key = r.RemoteAddr
+        }
+
+        allowed, err := rl.limiter.Allow(key)
+        if err != nil || !allowed {
+            w.Header().Set("Retry-After", "60")
+            http.Error(w, "rate limit exceeded", http.StatusTooManyRequests)
+            return
+        }
+
+        next.ServeHTTP(w, r)
+    })
+}
+
+// Example: JWT validation middleware
+type AuthMiddleware struct {
+    providers map[string]JWTProvider
+}
+
+func (am *AuthMiddleware) ServeMiddleware(next http.Handler) http.Handler {
+    return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+        token := extractBearerToken(r)
+        if token == "" {
+            http.Error(w, "missing authorization header", http.StatusUnauthorized)
+            return
+        }
+
+        claims, err := am.validate(token)
+        if err != nil {
+            http.Error(w, "invalid token", http.StatusUnauthorized)
+            return
+        }
+
+        ctx := context.WithValue(r.Context(), "user_id", claims.Subject)
+        next.ServeHTTP(w, r.WithContext(ctx))
+    })
+}
+```
+
+### Design Decisions
+
+Go was selected for its low memory footprint and fast startup time — critical for a gateway that handles thousands of concurrent connections. The middleware chain pattern keeps each concern isolated while allowing flexible composition. Redis backs the rate limiter to maintain state across multiple gateway instances in a load-balanced setup.

@@ -1,0 +1,78 @@
+---
+title: Markdown Note App
+description: A lightweight note-taking application with markdown support, tag organization, and full-text search.
+tags: ["electron", "typescript", "sqlite"]
+status: active
+featured: false
+order: 6
+repoUrl: "https://github.com/user/markdown-notes"
+startDate: 2025-09-20
+---
+
+## Overview
+
+A desktop note-taking application built for writers and developers who prefer plain text. Features markdown preview, hierarchical tag organization, and instant full-text search powered by SQLite FTS5.
+
+### Key Features
+
+- **Markdown editing**: Split-pane editor with live preview and syntax highlighting
+- **Tag system**: Multi-level tags with automatic suggestion based on existing notes
+- **Full-text search**: SQLite FTS5 index provides sub-millisecond search across all content
+- **Export options**: PDF, HTML, and markdown bundles for backup or sharing
+
+### Architecture
+
+The app uses Electron for the desktop wrapper with a SQLite database for local storage. The editor component is built on CodeMirror 6, configured with a custom markdown parser that highlights syntax errors in real time. Search indexing runs asynchronously to avoid blocking the UI thread.
+
+```typescript
+// Example: Note model with FTS5 search
+interface Note {
+  id: string;
+  title: string;
+  content: string;
+  tags: string[];
+  createdAt: Date;
+  updatedAt: Date;
+}
+
+class SearchIndex {
+  private db: Database;
+
+  constructor(dbPath: string) {
+    this.db = new Database(dbPath);
+    this.initFTS();
+  }
+
+  private initFTS() {
+    this.db.exec(`
+      CREATE VIRTUAL TABLE IF NOT EXISTS notes_search USING fts5(
+        title, content, content=notes, content_type='markdown'
+      );
+    `);
+  }
+
+  addToIndex(note: Note) {
+    const stmt = this.db.prepare(
+      'INSERT INTO notes_search (rowid, title, content) VALUES (?, ?, ?)'
+    );
+    stmt.run(note.id, note.title, note.content);
+  }
+
+  search(query: string): Note[] {
+    const results = this.db.prepare(
+      `SELECT * FROM notes WHERE id IN (
+        SELECT rowid FROM notes_search WHERE notes_search MATCH ?
+       ) ORDER rank`
+    ).all(this.tokenize(query));
+    return results;
+  }
+
+  private tokenize(text: string): string {
+    return text.replace(/[^\w\s]/g, '').toLowerCase();
+  }
+}
+```
+
+### Design Decisions
+
+SQLite was chosen over more complex databases because the app is single-user and local-first. FTS5 provides robust search without introducing external dependencies like Elasticsearch. The CodeMirror editor was preferred over contenteditable-based alternatives for its predictable state management and plugin ecosystem.
