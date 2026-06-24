@@ -4,6 +4,7 @@ import BaseLayout from '@/layouts/Base.astro';
 import Header from '@/components/layout/Header.astro';
 import Footer from '@/components/layout/Footer.astro';
 import ProjectCard from '@/components/projects/ProjectCard.astro';
+import TagAside from '@/components/layout/TagAside.astro';
 
 const allProjects = await getCollection('projects');
 const sorted = allProjects.sort((a, b) => a.data.order - b.data.order);
@@ -33,46 +34,37 @@ const otherProjects = sorted.filter((p) => !p.data.featured);
         Selected work spanning web applications, tooling, and design systems.
       </p>
 
-      <!-- Tags -->
-      {tags.length > 0 && (
-        <div class="mb-12 flex flex-wrap gap-2">
-          {tags.map(({ name, count }) => (
-            <a
-              href={`/projects/tags/${name.toLowerCase().replace(/\s+/g, '-')}`}
-              class="inline-flex items-center rounded-full bg-primary/10 px-3 py-1 text-sm font-medium text-primary transition-colors hover:bg-primary/20"
-            >
-              {name}
-              <span class="ml-1.5 text-xs text-primary/70">({count})</span>
-            </a>
-          ))}
-        </div>
-      )}
+      <div class="grid grid-cols-1 gap-x-8 lg:grid-cols-[1fr_20rem]">
+        <div class="min-w-0">
+          <!-- Featured projects -->
+          {featuredProjects.length > 0 && (
+            <section class="mb-16">
+              <h2 class="mb-6 font-display text-xl font-semibold tracking-tight text-text-secondary uppercase">
+                Featured
+              </h2>
+              <div class="grid gap-6 sm:grid-cols-2 lg:grid-cols-4">
+                {featuredProjects.map((project) => (
+                  <ProjectCard project={project} featured />
+                ))}
+              </div>
+            </section>
+          )}
 
-      <!-- Featured projects -->
-      {featuredProjects.length > 0 && (
-        <section class="mb-16">
-          <h2 class="mb-6 font-display text-xl font-semibold tracking-tight text-text-secondary uppercase">
-            Featured
-          </h2>
-          <div class="grid gap-6 sm:grid-cols-2 lg:grid-cols-3">
-            {featuredProjects.map((project) => (
-              <ProjectCard project={project} featured />
-            ))}
-          </div>
-        </section>
-      )}
-
-      <!-- All projects -->
-      <section>
-        <h2 class="mb-6 font-display text-xl font-semibold tracking-tight text-text-secondary uppercase">
-          Other Projects
-        </h2>
-        <div class="grid gap-6 sm:grid-cols-2 lg:grid-cols-3">
-          {otherProjects.map((project) => (
-            <ProjectCard project={project} />
-          ))}
+          <!-- All projects -->
+          <section>
+            <h2 class="mb-6 font-display text-xl font-semibold tracking-tight text-text-secondary uppercase">
+              Other Projects
+            </h2>
+            <div class="grid gap-6 sm:grid-cols-2 xl:grid-cols-3">
+              {otherProjects.map((project) => (
+                <ProjectCard project={project} />
+              ))}
+            </div>
+          </section>
         </div>
-      </section>
+
+        <TagAside tags={tags} basePath="/projects" />
+      </div>
     </div>
   </main>
   <Footer />

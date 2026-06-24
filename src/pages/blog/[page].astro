@@ -6,6 +6,7 @@ import Footer from '@/components/layout/Footer.astro';
 import { formatDate } from '@/lib/utils';
 import { getReadingTime, getAllTags } from '@/lib/posts';
 import Pagination from '@/components/ui/Pagination.astro';
+import TagAside from '@/components/layout/TagAside.astro';
 
 export async function getStaticPaths() {
   const pageSize = 10;
@@ -42,52 +43,35 @@ const allTags = Astro.props.allTags ?? [];
         Thoughts on web development, TypeScript, and building for performance.
       </p>
 
-      {allTags.length > 0 && (
-        <div class="mb-10 flex flex-wrap gap-2">
-          {allTags.map(({ name, count }) => (
-            <a
-              href={`/blog/tags/${name.toLowerCase().replace(/\s+/g, '-')}`}
-              class="inline-flex items-center rounded-full bg-primary/10 px-3 py-1 text-sm font-medium text-primary transition-colors hover:bg-primary/20"
-            >
-              {name}
-              <span class="ml-1.5 text-xs text-primary/70">({count})</span>
-            </a>
-          ))}
+      <div class="grid grid-cols-1 gap-x-8 lg:grid-cols-[1fr_20rem]">
+        <div class="min-w-0">
+          <div class="space-y-8">
+            {posts.map((post) => (
+              <article class="group border-b border-border pb-8 last:border-b-0">
+                <a href={`/blog/${post.id}`} class="block">
+                  <h2 class="font-display text-2xl font-semibold tracking-tight text-text group-hover:text-primary transition-colors">
+                    {post.data.title}
+                  </h2>
+                  <div class="mt-2 flex flex-wrap items-center gap-2 text-sm text-text-secondary">
+                    <time datetime={post.data.pubDate.toISOString()}>
+                      {formatDate(post.data.pubDate)}
+                    </time>
+                    <span aria-hidden="true">·</span>
+                    <span>{getReadingTime(post.body ?? '')} min read</span>
+                  </div>
+                  <p class="mt-3 text-text-secondary leading-relaxed line-clamp-2">
+                    {post.data.description}
+                  </p>
+                </a>
+              </article>
+            ))}
+          </div>
+
+          <Pagination currentPage={currentPage} totalPages={totalPages} baseUrl="/blog/{page}" />
         </div>
-      )}
 
-      <div class="space-y-8">
-        {posts.map((post) => (
-          <article class="group border-b border-border pb-8 last:border-b-0">
-            <a href={`/blog/${post.id}`} class="block">
-              <h2 class="font-display text-2xl font-semibold tracking-tight text-text group-hover:text-primary transition-colors">
-                {post.data.title}
-              </h2>
-              <div class="mt-2 flex flex-wrap items-center gap-2 text-sm text-text-secondary">
-                <time datetime={post.data.pubDate.toISOString()}>
-                  {formatDate(post.data.pubDate)}
-                </time>
-                <span aria-hidden="true">·</span>
-                <span>{getReadingTime(post.body ?? '')} min read</span>
-              </div>
-              <p class="mt-3 text-text-secondary leading-relaxed line-clamp-2">
-                {post.data.description}
-              </p>
-              {post.data.tags.length > 0 && (
-                <div class="mt-3 flex flex-wrap gap-2">
-                  {post.data.tags.slice(0, 3).map((tag: string) => (
-                    <span class="inline-flex items-center rounded-full bg-surface-2 px-2 py-0.5 text-xs font-medium text-text-secondary">
-                      {tag}
-                    </span>
-                  ))}
-                </div>
-              )}
-            </a>
-          </article>
-        ))}
+        <TagAside tags={allTags} basePath="/blog" />
       </div>
-
-      <Pagination currentPage={currentPage} totalPages={totalPages} baseUrl="/blog/{page}" />
     </div>
   </main>
   <Footer />
