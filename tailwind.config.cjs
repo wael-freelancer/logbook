@@ -62,6 +62,57 @@ module.exports = {
         slow: 'var(--duration-slow)',
         slower: 'var(--duration-slower)',
       },
+      keyframes: {
+        'fade-in': {
+          from: { opacity: '0' },
+          to: { opacity: '1' },
+        },
+        'fade-out': {
+          from: { opacity: '1' },
+          to: { opacity: '0' },
+        },
+        'slide-up': {
+          from: { opacity: '0', transform: 'translateY(20px)' },
+          to: { opacity: '1', transform: 'translateY(0)' },
+        },
+        'slide-down': {
+          from: { opacity: '0', transform: 'translateY(-20px)' },
+          to: { opacity: '1', transform: 'translateY(0)' },
+        },
+        'scale-in': {
+          from: { opacity: '0', transform: 'scale(0.95)' },
+          to: { opacity: '1', transform: 'scale(1)' },
+        },
+        'slide-in-right': {
+          from: { opacity: '0', transform: 'translateX(-20px)' },
+          to: { opacity: '1', transform: 'translateX(0)' },
+        },
+        fadeInUp: {
+          from: { opacity: '0', transform: 'translateY(20px)' },
+          to: { opacity: '1', transform: 'translateY(0)' },
+        },
+        orbFloat: {
+          '0%': { transform: 'translate(0, 0) scale(1)' },
+          '33%': { transform: 'translate(15px, -10px) scale(1.05)' },
+          '66%': { transform: 'translate(-10px, 8px) scale(0.95)' },
+          '100%': { transform: 'translate(5px, -5px) scale(1.02)' },
+        },
+        gradientText: {
+          '0%, 100%': { backgroundPosition: '0% 0%' },
+          '50%': { backgroundPosition: '100% 0%' },
+        },
+      },
+      animation: {
+        'fade-in': 'fade-in 250ms cubic-bezier(0, 0, 0.2, 1)',
+        'fade-out': 'fade-out 250ms cubic-bezier(0, 0, 0.2, 1)',
+        'slide-up': 'slide-up 250ms cubic-bezier(0, 0, 0.2, 1)',
+        'slide-down': 'slide-down 250ms cubic-bezier(0, 0, 0.2, 1)',
+        'scale-in': 'scale-in 250ms cubic-bezier(0.34, 1.56, 0.64, 1)',
+        'slide-in-right': 'slide-in-right 250ms cubic-bezier(0, 0, 0.2, 1)',
+        'fade-in-up': 'fadeInUp 0.6s ease-out forwards',
+        'orb-float': 'orbFloat 20s ease-in-out infinite alternate',
+        'gradient-text': 'gradientText 8s ease-in-out infinite',
+      },
       zIndex: {
         below: 'var(--z-below)',
         base: 'var(--z-base)',
