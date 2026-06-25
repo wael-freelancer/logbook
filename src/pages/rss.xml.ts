@@ -1,9 +1,8 @@
-import { getCollection } from 'astro:content';
 import rss from '@astrojs/rss';
+import { getSortedPosts } from '@/lib/posts';
 
 export async function GET(context: { site: string }) {
-  const posts = await getCollection('blog', ({ data }) => !data.draft);
-  const sorted = posts.sort((a, b) => b.data.pubDate.valueOf() - a.data.pubDate.valueOf());
+  const posts = await getSortedPosts();
   const site = context.site ?? import.meta.env.SITE ?? 'https://logbook.vercel.app';
   return rss({
     title: 'Log Book',

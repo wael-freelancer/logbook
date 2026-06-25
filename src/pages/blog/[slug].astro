@@ -1,15 +1,15 @@
 ---
-import { getEntry, getCollection, render } from 'astro:content';
+import { getEntry, render } from 'astro:content';
 import BaseLayout from '@/layouts/Base.astro';
 import Header from '@/components/layout/Header.astro';
 import Footer from '@/components/layout/Footer.astro';
 import Prose from '@/components/ui/Prose.astro';
 import JsonLd from '@/components/seo/JsonLd.astro';
-import { getReadingTime, getRelatedPosts } from '@/lib/posts';
+import { getReadingTime, getRelatedPosts, getAllPosts } from '@/lib/posts';
 import { formatDate } from '@/lib/utils';
 
 export async function getStaticPaths() {
-  const posts = await getCollection('blog', ({ data }) => !data.draft);
+  const posts = await getAllPosts();
   return posts.map((post) => ({
     params: { slug: post.id },
     props: { post },

@@ -1,31 +1,20 @@
 ---
-import { getCollection } from 'astro:content';
 import BaseLayout from '@/layouts/Base.astro';
 import Header from '@/components/layout/Header.astro';
 import Footer from '@/components/layout/Footer.astro';
 import PostList from '@/components/blog/PostList.astro';
+import { getPostTagPaths, getPostsByTag } from '@/lib/posts';
 
 export async function getStaticPaths() {
-  const posts = await getCollection('blog', ({ data }) => !data.draft);
-  const tags = new Set<string>();
-  for (const post of posts) {
-    for (const tag of post.data.tags) {
-      tags.add(tag.toLowerCase().replace(/\s+/g, '-'));
-    }
-  }
-  return Array.from(tags).map((tag) => ({
-    params: { tag },
-    props: { tag },
+  const tags = await getPostTagPaths();
+  return tags.map((t) => ({
+    params: { tag: t.tag },
+    props: { tag: t.tag },
   }));
 }
 
 const { tag } = Astro.props;
-const allPosts = await getCollection('blog', ({ data }) => !data.draft);
-const filtered = allPosts
-  .filter((post) =>
-    post.data.tags.some((t: string) => t.toLowerCase().replace(/\s+/g, '-') === tag)
-  )
-  .sort((a, b) => b.data.pubDate.valueOf() - a.data.pubDate.valueOf());
+const filtered = await getPostsByTag(tag);
 
 const displayTag = filtered[0]?.data.tags.find(
   (t: string) => t.toLowerCase().replace(/\s+/g, '-') === tag

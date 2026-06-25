@@ -1,26 +1,17 @@
 ---
-import { getCollection } from 'astro:content';
 import BaseLayout from '@/layouts/Base.astro';
 import Header from '@/components/layout/Header.astro';
 import Footer from '@/components/layout/Footer.astro';
 import BlogLayout from '@/components/blog/BlogLayout.astro';
+import { getSortedPosts, getPostTags } from '@/lib/posts';
 
-const allPosts = await getCollection('blog', ({ data }) => !data.draft);
-const sorted = allPosts.sort((a, b) => b.data.pubDate.valueOf() - a.data.pubDate.valueOf());
+const sorted = await getSortedPosts();
 const pageSize = 10;
 const totalPages = Math.max(1, Math.ceil(sorted.length / pageSize));
 const currentPage = 1;
 const posts = sorted.slice(0, pageSize);
 
-const tagMap = new Map<string, number>();
-for (const post of sorted) {
-  for (const tag of post.data.tags) {
-    tagMap.set(tag, (tagMap.get(tag) ?? 0) + 1);
-  }
-}
-const tags = Array.from(tagMap.entries())
-  .map(([name, count]) => ({ name, count }))
-  .sort((a, b) => b.count - a.count);
+const tags = await getPostTags();
 ---
 
 <BaseLayout title="Blog — Log Book" description="Technical articles about web development, TypeScript, Astro, and software engineering.">

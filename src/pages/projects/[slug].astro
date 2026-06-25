@@ -1,15 +1,15 @@
 ---
-import { getEntry, getCollection, render } from 'astro:content';
+import { getEntry, render } from 'astro:content';
 import BaseLayout from '@/layouts/Base.astro';
 import Header from '@/components/layout/Header.astro';
 import Footer from '@/components/layout/Footer.astro';
 import Prose from '@/components/ui/Prose.astro';
 import JsonLd from '@/components/seo/JsonLd.astro';
 import { formatDate } from '@/lib/utils';
-import { getRelatedProjects } from '@/lib/projects';
+import { getRelatedProjects, getAllProjects } from '@/lib/projects';
 
 export async function getStaticPaths() {
-  const projects = await getCollection('projects');
+  const projects = await getAllProjects();
   return projects.map((project) => ({
     params: { slug: project.id },
     props: { project },

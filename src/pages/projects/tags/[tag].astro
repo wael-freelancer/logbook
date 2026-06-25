@@ -1,30 +1,20 @@
 ---
-import { getCollection } from 'astro:content';
 import BaseLayout from '@/layouts/Base.astro';
 import Header from '@/components/layout/Header.astro';
 import Footer from '@/components/layout/Footer.astro';
 import ProjectCard from '@/components/projects/ProjectCard.astro';
+import { getProjectTagPaths, getProjectsByTag } from '@/lib/projects';
 
 export async function getStaticPaths() {
-  const projects = await getCollection('projects');
-  const tags = new Set<string>();
-  for (const project of projects) {
-    for (const tag of project.data.tags) {
-      tags.add(tag.toLowerCase().replace(/\s+/g, '-'));
-    }
-  }
-  return Array.from(tags).map((tag) => ({
-    params: { tag },
-    props: { tag },
+  const tags = await getProjectTagPaths();
+  return tags.map((t) => ({
+    params: { tag: t.tag },
+    props: { tag: t.tag },
   }));
 }
 
 const { tag } = Astro.props;
-const allProjects = await getCollection('projects');
-const sorted = allProjects.sort((a, b) => a.data.order - b.data.order);
-const filtered = sorted.filter((project) =>
-  project.data.tags.some((t: string) => t.toLowerCase().replace(/\s+/g, '-') === tag)
-);
+const filtered = await getProjectsByTag(tag);
 
 const displayTag = filtered[0]?.data.tags.find(
   (t: string) => t.toLowerCase().replace(/\s+/g, '-') === tag
