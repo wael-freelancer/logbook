@@ -204,20 +204,9 @@ Each phase is self-contained and ship-worthy. Complete verification checklist be
 - [ ] `src/components/blog/Search.astro` — search UI (client:idle)
 - [ ] Wire into blog index and header (optional)
 
-**Comments**
-- [ ] Set up Giscus (GitHub Discussions-backed)
-- [ ] `src/components/blog/Comments.astro` — lazy-loaded iframe (client:visible)
-- [ ] Wire into `BlogPost.astro`
-
-**OG Images**
-- [ ] `src/pages/og/[slug].png.ts` — dynamic OG via Satori
-- [ ] Update `BaseHead.astro` to use dynamic OG for blog posts and projects
-
 ### Verification Checklist
 - [ ] View counter increments on page load (check KV dashboard)
 - [ ] Search returns relevant results
-- [ ] Comments widget loads after scrolling into view
-- [ ] OG images render correctly (test with https://opengraph.xyz)
 
 ---
 

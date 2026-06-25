@@ -188,16 +188,6 @@ Live status of every task. Update this file as work progresses. The agent reads 
 - [ ] `src/components/blog/Search.astro` — search UI (client:idle)
 - [ ] Add Search to blog index page
 
-**Comments**
-- [ ] Set up Giscus (create GitHub Discussion category)
-- [ ] `src/components/blog/Comments.astro` — lazy iframe (client:visible)
-- [ ] Wire into BlogPost layout
-
-- [ ] Verify view counter increments (check KV dashboard)
-- [ ] Verify search returns results
-- [ ] Verify comments load on scroll
-- [ ] Verify OG images render (test with opengraph.xyz)
-
 **Phase 5 Gate:** ✅ All dynamic features working in production-like environment
 
 ---
