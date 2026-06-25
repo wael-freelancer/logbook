@@ -1,0 +1,171 @@
+---
+import BaseLayout from '@/layouts/Base.astro';
+import Header from '@/components/layout/Header.astro';
+import Footer from '@/components/layout/Footer.astro';
+import Badge from '@/components/ui/Badge.astro';
+---
+
+<BaseLayout title="About — Log Book" description="Learn about Wael, a software engineer who builds things for the web and writes about the process.">
+  <Header />
+
+  <main id="main-content" class="mx-auto w-full max-w-screen-xl px-4 sm:px-6 lg:px-8 py-12 lg:py-20">
+    <!-- Bio Section -->
+    <div class="mb-16">
+      <h1 class="mb-8 font-display text-4xl font-semibold tracking-tight text-text sm:text-5xl">
+        About Me
+      </h1>
+
+      <div class="grid gap-8 lg:grid-cols-[1fr_256px]">
+        <!-- Bio content -->
+        <div class="prose max-w-none">
+          <p class="text-lg leading-relaxed text-text-secondary">
+            I'm a software engineer with a passion for building performant, accessible web applications. I care deeply about developer experience, design systems, and the intersection of engineering and creativity.
+          </p>
+
+          <p class="mt-4 text-base leading-relaxed text-text-secondary">
+            When I'm not coding, I write about web development, TypeScript patterns, and lessons learned from building production applications. This blog is my space to document the process and share what works.
+          </p>
+
+          <p class="mt-4 text-base leading-relaxed text-text-secondary">
+            Currently working on portfolio sites, open-source tools, and exploring the edges of web performance. Always learning, always building.
+          </p>
+        </div>
+
+        <!-- Profile photo placeholder -->
+        <div class="hidden lg:block">
+          <div class="aspect-square rounded-lg border border-border bg-surface-2" aria-label="Profile photo placeholder"></div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Skills Section -->
+    <div class="mb-16 border-t border-border pt-12">
+      <h2 class="mb-8 font-display text-2xl font-semibold tracking-tight text-text sm:text-3xl">
+        Skills &amp; Tools
+      </h2>
+
+      <div class="space-y-8">
+        <!-- Frontend -->
+        <div>
+          <h3 class="mb-4 text-sm font-semibold text-text-secondary uppercase tracking-wide">Frontend</h3>
+          <div class="flex flex-wrap gap-2">
+            {['Astro', 'React', 'Vue', 'Tailwind CSS', 'TypeScript', 'JavaScript', 'HTML/CSS'].map((skill) => (
+              <span class="inline-flex items-center rounded-full bg-primary/10 px-3 py-1 text-sm font-medium text-primary">
+                {skill}
+              </span>
+            ))}
+          </div>
+        </div>
+
+        <!-- Backend -->
+        <div>
+          <h3 class="mb-4 text-sm font-semibold text-text-secondary uppercase tracking-wide">Backend</h3>
+          <div class="flex flex-wrap gap-2">
+            {['Node.js', 'Express', 'REST APIs', 'PostgreSQL', 'Redis', 'GraphQL'].map((skill) => (
+              <span class="inline-flex items-center rounded-full bg-primary/10 px-3 py-1 text-sm font-medium text-primary">
+                {skill}
+              </span>
+            ))}
+          </div>
+        </div>
+
+        <!-- Tools & DevOps -->
+        <div>
+          <h3 class="mb-4 text-sm font-semibold text-text-secondary uppercase tracking-wide">Tools &amp; DevOps</h3>
+          <div class="flex flex-wrap gap-2">
+            {['Git', 'Docker', 'Vercel', 'Linux', 'VS Code', 'Figma', 'CI/CD'].map((skill) => (
+              <span class="inline-flex items-center rounded-full bg-primary/10 px-3 py-1 text-sm font-medium text-primary">
+                {skill}
+              </span>
+            ))}
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Career Timeline -->
+    <div class="mb-16 border-t border-border pt-12">
+      <h2 class="mb-8 font-display text-2xl font-semibold tracking-tight text-text sm:text-3xl">
+        Experience
+      </h2>
+
+      <div class="max-w-2xl space-y-8">
+        <!-- Timeline item 1 -->
+        <div class="relative pl-8">
+          <div class="absolute left-0 top-0 h-4 w-4 rounded-full border-2 border-primary bg-bg"></div>
+          <div class="absolute left-[7px] top-4 h-full w-px bg-border"></div>
+          <time class="text-sm text-text-secondary">2024 — Present</time>
+          <h3 class="mt-1 font-display text-lg font-semibold text-text">Senior Software Engineer</h3>
+          <p class="mt-1 text-sm text-text-secondary">Tech Company</p>
+          <p class="mt-2 text-base leading-relaxed text-text-secondary">
+            Building scalable web applications, mentoring junior developers, and driving technical decisions. Focused on performance optimization and developer experience.
+          </p>
+        </div>
+
+        <!-- Timeline item 2 -->
+        <div class="relative pl-8">
+          <div class="absolute left-0 top-0 h-4 w-4 rounded-full border-2 border-primary bg-bg"></div>
+          <div class="absolute left-[7px] top-4 h-full w-px bg-border"></div>
+          <time class="text-sm text-text-secondary">2021 — 2024</time>
+          <h3 class="mt-1 font-display text-lg font-semibold text-text">Software Engineer</h3>
+          <p class="mt-1 text-sm text-text-secondary">Startup Inc.</p>
+          <p class="mt-2 text-base leading-relaxed text-text-secondary">
+            Full-stack development for a fast-growing startup. Built core features from scratch, implemented design systems, and shipped products used by thousands.
+          </p>
+        </div>
+
+        <!-- Timeline item 3 -->
+        <div class="relative pl-8">
+          <div class="absolute left-0 top-0 h-4 w-4 rounded-full border-2 border-primary bg-bg"></div>
+          <time class="text-sm text-text-secondary">2019 — 2021</time>
+          <h3 class="mt-1 font-display text-lg font-semibold text-text">Junior Developer</h3>
+          <p class="mt-1 text-sm text-text-secondary">Digital Agency</p>
+          <p class="mt-2 text-base leading-relaxed text-text-secondary">
+            Built client websites and web applications. Learned the fundamentals of web development, project management, and working with cross-functional teams.
+          </p>
+        </div>
+      </div>
+    </div>
+
+    <!-- Currently Section -->
+    <div class="border-t border-border pt-12">
+      <h2 class="mb-8 font-display text-2xl font-semibold tracking-tight text-text sm:text-3xl">
+        Currently
+      </h2>
+
+      <div class="grid gap-6 lg:grid-cols-3">
+          <!-- Reading -->
+          <div class="rounded-lg border border-border bg-surface p-6">
+            <h3 class="mb-4 font-display text-base font-semibold text-text">Reading</h3>
+            <ul class="space-y-2 text-sm text-text-secondary">
+              <li>"Designing Data-Intensive Applications" by Martin Kleppmann</li>
+              <li>"The City and the City" by China Miéville</li>
+              <li>Astro documentation (again, it's excellent)</li>
+            </ul>
+          </div>
+
+          <!-- Learning -->
+          <div class="rounded-lg border border-border bg-surface p-6">
+            <h3 class="mb-4 font-display text-base font-semibold text-text">Learning</h3>
+            <ul class="space-y-2 text-sm text-text-secondary">
+              <li>WebAssembly and Rust fundamentals</li>
+              <li>Advanced TypeScript patterns</li>
+              <li>Accessibility deep-dive (WCAG 2.3)</li>
+            </ul>
+          </div>
+
+          <!-- Building -->
+          <div class="rounded-lg border border-border bg-surface p-6">
+            <h3 class="mb-4 font-display text-base font-semibold text-text">Building</h3>
+            <ul class="space-y-2 text-sm text-text-secondary">
+              <li>This portfolio site (you're looking at it)</li>
+              <li>An open-source CLI tool</li>
+              <li>More blog posts about web performance</li>
+            </ul>
+          </div>
+        </div>
+    </div>
+  </main>
+
+  <Footer />
+</BaseLayout>

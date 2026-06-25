@@ -1,0 +1,87 @@
+---
+import BaseLayout from '@/layouts/Base.astro';
+import Header from '@/components/layout/Header.astro';
+import Footer from '@/components/layout/Footer.astro';
+---
+
+<BaseLayout title="Uses — Log Book" description="A list of tools, software, and hardware I use every day.">
+  <Header />
+
+  <main id="main-content" class="mx-auto w-full max-w-screen-xl px-4 sm:px-6 lg:px-8 py-12 lg:py-20">
+    <h1 class="mb-8 font-display text-4xl font-semibold tracking-tight text-text sm:text-5xl">
+      Uses
+    </h1>
+
+    <p class="mb-12 max-w-2xl text-lg leading-relaxed text-text-secondary">
+      A list of tools, software, and hardware I use every day to build websites and write code. This page is a living document — it updates as my setup changes.
+    </p>
+
+    <!-- Hardware -->
+    <div class="mb-12 border-t border-border pt-12">
+      <h2 class="mb-6 font-display text-2xl font-semibold tracking-tight text-text sm:text-3xl">
+        Hardware
+      </h2>
+      <ul class="space-y-4">
+        {[
+          { name: 'MacBook Pro M4', desc: '16-inch, 32GB RAM — daily driver for development' },
+          { name: 'Keychron Q10', desc: 'Mechanical keyboard, hot-swappable, QMK/VIA compatible' },
+          { name: 'Logitech MX Master 3S', desc: 'Trackman mouse, great for precision work' },
+          { name: 'Dell U2723DE', desc: '27" 4K monitor — second screen for docs and terminal' },
+        ].map((item) => (
+          <li class="rounded-lg border border-border bg-surface p-6">
+            <h3 class="font-display font-semibold text-text">{item.name}</h3>
+            <p class="mt-1 text-sm text-text-secondary">{item.desc}</p>
+          </li>
+        ))}
+      </ul>
+    </div>
+
+    <!-- Software -->
+    <div class="mb-12 border-t border-border pt-12">
+      <h2 class="mb-6 font-display text-2xl font-semibold tracking-tight text-text sm:text-3xl">
+        Software
+      </h2>
+      <ul class="space-y-4">
+        {[
+          { name: 'VS Code', desc: 'Primary editor with ESLint, Prettier, and Astro extensions' },
+          { name: 'TableToMarkdown', desc: 'Convert tables to markdown format quickly' },
+          { name: 'Figma', desc: 'Design tool for prototyping and UI exploration' },
+          { name: 'iTerm2 + Zsh', desc: 'Terminal emulator with custom theme and plugins' },
+        ].map((item) => (
+          <li class="rounded-lg border border-border bg-surface p-6">
+            <h3 class="font-display font-semibold text-text">{item.name}</h3>
+            <p class="mt-1 text-sm text-text-secondary">{item.desc}</p>
+          </li>
+        ))}
+      </ul>
+    </div>
+
+    <!-- Editor Configuration -->
+    <div class="mb-12 border-t border-border pt-12">
+      <h2 class="mb-6 font-display text-2xl font-semibold tracking-tight text-text sm:text-3xl">
+        Editor Config
+      </h2>
+      <p class="mb-4 text-base leading-relaxed text-text-secondary">
+        My VS Code settings, synced via dotfiles:
+      </p>
+      <a
+        href="https://github.com/user/dotfiles"
+        class="inline-flex items-center gap-2 rounded-md border border-border bg-surface px-4 py-2 text-sm font-medium text-text transition-colors hover:bg-surface-2"
+      >
+        github.com/user/dotfiles
+      </a>
+    </div>
+
+    <!-- CLI Tools -->
+    <div class="border-t border-border pt-12">
+      <h2 class="mb-6 font-display text-2xl font-semibold tracking-tight text-text sm:text-3xl">
+        CLI Tools
+      </h2>
+      <div class="rounded-lg border border-border bg-surface p-6">
+        <pre class="font-mono text-sm leading-relaxed text-text-secondary"><code>fzf gh git node npm yarn astro pagefind</code></pre>
+      </div>
+    </div>
+  </main>
+
+  <Footer />
+</BaseLayout>
