@@ -46,11 +46,11 @@ const currentPath = Astro.url.pathname;
       aria-label="Toggle dark/light mode"
     >
       <!-- Sun icon (shown in dark mode) -->
-      <svg class="hidden h-5 w-5 group-[.light]:block dark:hidden" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor">
+      <svg class="hidden h-5 w-5 group-[.light]:block dark:hidden" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor" aria-hidden="true">
         <path stroke-linecap="round" stroke-linejoin="round" d="M12 3v2.25m6.364.386-1.591 1.591M21 12h-2.25m2.25 0-1.591 1.591M12 18.75V21m-4.364-.909-1.591-1.591M4.5 12H2.25m2.25 0L4.5 10.409M12 9.75a2.25 2.25 0 1 0 0 4.5 2.25 2.25 0 0 0 0-4.5Z" />
       </svg>
       <!-- Moon icon (shown in light mode) -->
-      <svg class="block h-5 w-5 group-[.light]:hidden dark:block" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor">
+      <svg class="block h-5 w-5 group-[.light]:hidden dark:block" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor" aria-hidden="true">
         <path stroke-linecap="round" stroke-linejoin="round" d="M21.752 15.002H9.483a16.841 16.841 0 0 1-1.732-2.253 16.821 16.821 0 0 1 0-4.5 16.842 16.842 0 0 1 2.253-1.732 16.821 16.821 0 0 1 4.5 0a16.842 16.842 0 0 1 1.732 2.253 16.821 16.821 0 0 1 0 4.5ZM12 12a3 3 0 1 0 0-6 3 3 0 0 0 0 6Z" />
       </svg>
     </button>
@@ -62,7 +62,7 @@ const currentPath = Astro.url.pathname;
       aria-label="Toggle mobile menu"
       aria-expanded="false"
     >
-      <svg class="h-6 w-6" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor">
+      <svg class="h-6 w-6" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor" aria-hidden="true">
         <path stroke-linecap="round" stroke-linejoin="round" d="M3.75 6.75h16.5M3.75 12h16.5m-16.5 5.25h16.5" />
       </svg>
     </button>
@@ -85,7 +85,7 @@ const currentPath = Astro.url.pathname;
           class="mt-4 flex items-center gap-3 rounded-lg px-3 py-2 text-base font-medium text-text-secondary transition-colors hover:bg-surface-2 hover:text-text"
           aria-label="Toggle dark/light mode"
         >
-          <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor" class="h-5 w-5">
+          <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor" class="h-5 w-5" aria-hidden="true">
             <path stroke-linecap="round" stroke-linejoin="round" d="M21.752 15.002H9.483a16.841 16.841 0 0 1-1.732-2.253 16.821 16.821 0 0 1 0-4.5 16.842 16.842 0 0 1 2.253-1.732 16.821 16.821 0 0 1 4.5 0a16.842 16.842 0 0 1 1.732 2.253 16.821 16.821 0 0 1 0 4.5ZM12 12a3 3 0 1 0 0-6 3 3 0 0 0 0 6Z" />
           </svg>
           <span>Toggle theme</span>

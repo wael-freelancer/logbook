@@ -13,6 +13,18 @@ const defaultDescription = 'A personal portfolio and technical blog by a softwar
 const finalDescription = description ?? defaultDescription;
 const ogUrl = `${siteUrl}${Astro.url.pathname}`;
 const ogImageUrl = ogImage ? new URL(ogImage, siteUrl).toString() : undefined;
+
+const websiteJsonLd = JSON.stringify({
+  '@context': 'https://schema.org',
+  '@type': 'WebSite',
+  name: 'Log Book',
+  url: `${siteUrl}/`,
+  description: defaultDescription,
+  author: {
+    '@type': 'Person',
+    name: 'Wael ElSawi',
+  },
+});
 ---
 
 <!-- Theme initialization — prevents FOUC -->
@@ -55,3 +67,6 @@ const ogImageUrl = ogImage ? new URL(ogImage, siteUrl).toString() : undefined;
 <meta name="twitter:title" content={title} />
 <meta name="twitter:description" content={finalDescription} />
 {ogImageUrl && <meta name="twitter:image" content={ogImageUrl} />}
+
+<!-- Website JSON-LD -->
+<script type="application/ld+json" is:raw>{websiteJsonLd}</script>

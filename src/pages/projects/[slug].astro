@@ -4,6 +4,7 @@ import BaseLayout from '@/layouts/Base.astro';
 import Header from '@/components/layout/Header.astro';
 import Footer from '@/components/layout/Footer.astro';
 import Prose from '@/components/ui/Prose.astro';
+import JsonLd from '@/components/seo/JsonLd.astro';
 import { formatDate } from '@/lib/utils';
 import { getRelatedProjects } from '@/lib/projects';
 
@@ -29,9 +30,19 @@ const statusLabels = {
   archived: 'Archived',
   wip: 'In Progress',
 };
+
+const jsonLdData = {
+  title: project.data.title,
+  description: project.data.description,
+  liveUrl: project.data.liveUrl,
+  repoUrl: project.data.repoUrl,
+  status: project.data.status,
+  url: `/projects/${project.id}`,
+};
 ---
 
 <BaseLayout title={`${project.data.title} — Projects — Log Book`} description={project.data.description}>
+  <JsonLd type="softwareapplication" data={jsonLdData} />
   <Header />
   <main id="main-content">
     <article class="mx-auto w-full max-w-screen-xl px-4 sm:px-6 lg:px-8">

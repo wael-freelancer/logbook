@@ -14,7 +14,7 @@
 
   --color-text: 222 47% 11%;
   --color-text-secondary: 215 25% 35%;
-  --color-text-tertiary: 218 11% 65%;
+  --color-text-tertiary: 215 14% 45%;
   --color-text-inverse: 0 0% 100%;
 
   --color-primary: 239 84% 67%;
@@ -230,4 +230,49 @@ body {
     animation-iteration-count: 1 !important;
     transition-duration: 0.01ms !important;
   }
+}
+
+/* ─── Focus Indicators (WCAG 2.4.3) ─── */
+
+:focus-visible {
+  outline: 3px solid hsl(var(--color-primary));
+  outline-offset: 2px;
+  box-shadow: 0 0 0 3px hsl(var(--color-primary-subtle));
+}
+
+a:focus-visible,
+button:focus-visible,
+input:focus-visible,
+textarea:focus-visible,
+select:focus-visible,
+[tabindex]:focus-visible {
+  outline: 3px solid hsl(var(--color-primary));
+  outline-offset: 2px;
+  box-shadow: 0 0 0 3px hsl(var(--color-bg)), 0 0 0 6px hsl(var(--color-primary-subtle));
+}
+
+/* Dark theme focus ring offset for better contrast */
+[data-theme="dark"] :focus-visible {
+  outline: 3px solid hsl(var(--color-primary));
+  outline-offset: 2px;
+  box-shadow: 0 0 0 3px hsl(var(--color-surface)), 0 0 0 6px hsl(var(--color-primary-subtle));
+}
+
+/* Skip link focus style */
+a[href="#main-content"]:focus-visible {
+  position: absolute;
+  top: 0.5rem;
+  left: 0.5rem;
+  z-index: 100;
+  border-radius: 0.25rem;
+  background-color: hsl(var(--color-primary));
+  padding: 0.75rem 1rem;
+  color: hsl(var(--color-text-inverse));
+  outline: none;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.3);
+}
+
+/* Remove default outline for non-visible focus */
+:focus {
+  outline: none;
 }

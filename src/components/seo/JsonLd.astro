@@ -1,0 +1,60 @@
+---
+interface Props {
+  type: 'article' | 'softwareapplication';
+  data?: Record<string, unknown>;
+}
+
+const { type, data } = Astro.props;
+
+let jsonLd: Record<string, unknown> = {
+  '@context': 'https://schema.org',
+};
+
+if (type === 'article') {
+  const articleData = data as {
+    title?: string;
+    description?: string;
+    pubDate?: Date;
+    updatedDate?: Date;
+    authorName?: string;
+    url?: string;
+  } | undefined;
+
+  jsonLd = {
+    '@context': 'https://schema.org',
+    '@type': 'Article',
+    headline: articleData?.title,
+    description: articleData?.description,
+    datePublished: articleData?.pubDate?.toISOString(),
+    dateModified: articleData?.updatedDate?.toISOString() ?? articleData?.pubDate?.toISOString(),
+    author: {
+      '@type': 'Person',
+      name: articleData?.authorName || 'Wael ElSawi',
+    },
+    url: articleData?.url,
+  };
+} else if (type === 'softwareapplication') {
+  const projectData = data as {
+    title?: string;
+    description?: string;
+    liveUrl?: string;
+    repoUrl?: string;
+    status?: string;
+    url?: string;
+  } | undefined;
+
+  jsonLd = {
+    '@context': 'https://schema.org',
+    '@type': 'SoftwareApplication',
+    name: projectData?.title,
+    description: projectData?.description,
+    url: projectData?.url ?? projectData?.liveUrl,
+    applicationCategory: 'OpenSourceProject',
+    operatingSystem: 'Web',
+  };
+}
+
+const serialized = JSON.stringify(jsonLd);
+---
+
+<script type="application/ld+json" is:raw>{serialized}</script>
