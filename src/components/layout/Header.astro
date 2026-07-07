@@ -76,6 +76,7 @@ const currentPath = Astro.url.pathname;
 
         <!-- Mobile theme toggle -->
         <button
+          id="mobile-theme-toggle"
           class="mt-4 flex items-center gap-3 rounded-lg px-3 py-2 text-base font-medium text-text-secondary transition-colors hover:bg-surface-2 hover:text-text"
           aria-label="Toggle dark/light mode"
         >
@@ -172,5 +173,11 @@ const currentPath = Astro.url.pathname;
 
   if (themeToggle) {
     themeToggle.addEventListener('click', toggleTheme);
+  }
+
+  // Mobile theme toggle
+  const mobileThemeToggle = document.getElementById('mobile-theme-toggle');
+  if (mobileThemeToggle) {
+    mobileThemeToggle.addEventListener('click', toggleTheme);
   }
 </script>

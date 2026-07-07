@@ -1,4 +1,6 @@
 ---
+import Analytics from '@vercel/analytics/astro';
+
 export interface Props {
   title: string;
   description?: string;
@@ -70,3 +72,6 @@ const websiteJsonLd = JSON.stringify({
 
 <!-- Website JSON-LD -->
 <script type="application/ld+json" is:raw>{websiteJsonLd}</script>
+
+<!-- Vercel Web Analytics -->
+<Analytics />

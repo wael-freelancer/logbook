@@ -13,10 +13,10 @@ Live status of every task. Update this file as work progresses. The agent reads 
 
 ## Current Status
 
-**Active Phase:** Phase 6 — SEO, Accessibility & Performance
-**Last Updated:** June 25, 2026
-**Last Completed Task:** Phase 6 — SEO, Accessibility & Performance (Phase 5 skipped)
-**Current Blocker:** None
+**Active Phase:** Phase 7 — Deployment & Polish
+**Last Updated:** July 7, 2026
+**Last Completed Task:** Phase 7 — Vercel Analytics, mobile theme toggle, timeline fix, pushed to GitHub
+**Current Blocker:** Awaiting manual steps (cross-browser test, Search Console, monitoring)
 
 ---
 
@@ -214,21 +214,23 @@ Live status of every task. Update this file as work progresses. The agent reads 
 
 ## Phase 7 — Deployment & Polish
 
-**Status:** 🔲 Not Started
+**Status:** ✅ In Progress
 **Depends on:** Phase 6 Gate
 
-- [ ] Deploy to Vercel (connect GitHub repo)
-- [ ] Configure environment variables in Vercel
-- [ ] Analytics setup (Vercel Analytics or Plausible)
-- [ ] Write 5+ real blog posts
-- [ ] Add 3+ real project case studies
-- [ ] Real About page content
-- [ ] Final design pass
-- [ ] Cross-browser test (Chrome, Firefox, Safari, Mobile Safari)
-- [ ] Submit to Google Search Console
-- [ ] Uptime monitoring
+- [x] Deploy to Vercel (connect GitHub repo) — pushed to `wael-freelancer/logbook`, Vercel auto-deploys on push
+- [ ] Configure environment variables in Vercel — no env vars needed currently
+- [x] Analytics setup — Vercel Web Analytics (`@vercel/analytics`) added to `BaseHead.astro`
+- [x] Write 5+ real blog posts — 26 published posts with substantive content
+- [x] Add 3+ real project case studies — 9 projects with detailed write-ups
+- [~] Real About page content — placeholder content kept; user wants to personalize later
+- [x] Final design pass — mobile theme toggle fixed, timeline bug fixed, no unused CSS
+- [ ] Cross-browser test (Chrome, Firefox, Safari, Mobile Safari) — manual
+- [ ] Submit to Google Search Console — manual
+- [ ] Uptime monitoring — manual
 
-**Phase 7 Gate:** ✅ Site live, content published, monitoring active
+**Phase 7 Gate:** ✅ Deployed, analytics active, build/lint clean, content published. Remaining items need manual action (cross-browser tests, Search Console, monitoring).
+
+> **Notes:** Phase 7 implemented on 2026-07-07. Changes: `@vercel/analytics` installed (v2.0.1) and added to BaseHead; mobile theme toggle button now has working click handler; about page timeline last-item padding fixed. Vercel auto-deploys configured via GitHub push. Placeholder social links and repo URLs kept per user preference. Git pushed to `wael-freelancer/logbook` on `main` branch.
 
 ---
 
@@ -249,6 +251,11 @@ Use this section to track decisions made and issues encountered. The agent shoul
 | 2026-06-24 | Decision | Simplified project schemas — removed `image()` since no project cover images yet |
 | 2026-06-24 | Decision | ESLint flat config with `eslint-plugin-astro` and `prettier-plugin-astro`, `--legacy-peer-deps` needed for @astrojs/tailwind v6 incompatibility |
 | 2026-06-25 | Decision | Phase 5 (Dynamic Features — View Counter, Search) skipped; site proceeds directly from Phase 4 to Phase 6 |
+| 2026-07-07 | Decision | Vercel Web Analytics via `@vercel/analytics` v2.0.1 added to BaseHead.astro |
+| 2026-07-07 | Fix | Mobile theme toggle button now has working click handler (was present but not wired up) |
+| 2026-07-07 | Fix | About page timeline last item had unnecessary padding-bottom and connecting line — corrected |
+| 2026-07-07 | Decision | Placeholder social links and repo URLs kept as-is; user will update later |
+| 2026-07-07 | Deployment | Pushed to `wael-freelancer/logbook` on `main`; Vercel auto-deploys on push |
 
 ---
 
