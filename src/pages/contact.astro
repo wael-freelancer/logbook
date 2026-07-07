@@ -2,6 +2,7 @@
 import BaseLayout from '@/layouts/Base.astro';
 import Header from '@/components/layout/Header.astro';
 import Footer from '@/components/layout/Footer.astro';
+import IconSpinner from '@/components/icons/IconSpinner.astro';
 ---
 
 <BaseLayout title="Contact — Log Book" description="Get in touch with Wael. Send a message or connect on social media.">
@@ -72,10 +73,7 @@ import Footer from '@/components/layout/Footer.astro';
         >
           <span id="btn-text">Send Message</span>
           <span id="btn-spinner" class="hidden ml-2" aria-hidden="true">
-            <svg class="h-5 w-5 animate-spin" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
-              <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
-              <path class="opacity-75" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A4.96 4.96 0 014 12H0c0 3.092 2.508 5.666 5.666 5.666V17.5a2.96 2.96 0 01-2-1.209z"></path>
-            </svg>
+            <IconSpinner class="h-5 w-5 animate-spin" />
           </span>
         </button>
 
