@@ -69,8 +69,6 @@
 }
 
 .prose pre {
-  background-color: hsl(var(--color-code-bg));
-  color: hsl(var(--color-code-text));
   border-radius: var(--radius-lg);
   padding: var(--space-6);
   overflow-x: auto;
@@ -84,6 +82,22 @@
   padding: 0;
   border-radius: 0;
   font-size: 0.875rem;
+}
+
+/* Shiki dual-theme syntax highlighting */
+
+.prose .astro-code,
+.prose .astro-code span {
+  color: var(--shiki-light);
+}
+
+.prose .astro-code {
+  background-color: hsl(var(--color-surface-2));
+}
+
+[data-theme="dark"] .prose .astro-code,
+[data-theme="dark"] .prose .astro-code span {
+  color: var(--shiki-dark);
 }
 
 .prose img {
