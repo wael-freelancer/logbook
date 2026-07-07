@@ -7,7 +7,7 @@ import rehypeSlug from 'rehype-slug';
 import rehypeAutolinkHeadings from 'rehype-autolink-headings';
 
 export default defineConfig({
-  site: 'https://logbook.vercel.app',
+  site: 'https://logbook-kohl.vercel.app',
   adapter: vercel(),
   integrations: [mdx(), sitemap()],
   markdown: {
