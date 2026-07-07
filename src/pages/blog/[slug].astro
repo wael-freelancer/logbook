@@ -5,6 +5,7 @@ import Header from '@/components/layout/Header.astro';
 import Footer from '@/components/layout/Footer.astro';
 import Prose from '@/components/ui/Prose.astro';
 import JsonLd from '@/components/seo/JsonLd.astro';
+import TableOfContents from '@/components/blog/TableOfContents.astro';
 import { getReadingTime, getRelatedPosts, getAllPosts } from '@/lib/posts';
 import { formatDate } from '@/lib/utils';
 
@@ -20,11 +21,6 @@ const { post } = Astro.props;
 const { Content, headings } = await render(post);
 const readingTime = getReadingTime(post.body ?? '');
 const related = await getRelatedPosts(post);
-const headingsList = headings?.map((h: { depth: number; text: string; slug: string }) => ({
-  depth: h.depth,
-  text: h.text,
-  id: h.slug,
-})) ?? [];
 
 const jsonLdData = {
   title: post.data.title,
@@ -101,27 +97,7 @@ const jsonLdData = {
           )}
         </div>
 
-        {headingsList.length > 0 && (
-          <aside class="hidden lg:block pt-12" aria-label="Table of contents">
-            <nav class="sticky top-24 max-h-[calc(100vh-8rem)] overflow-y-auto">
-              <h3 class="mb-4 text-sm font-semibold text-text-secondary uppercase tracking-wide">
-                Contents
-              </h3>
-              <ul class="space-y-1 border-l border-border pl-4">
-                {headingsList.map((heading: { depth: number; text: string; id: string }) => (
-                  <li>
-                    <a
-                      href={`#${heading.id}`}
-                      class={`block py-1 text-sm leading-relaxed text-text-secondary transition-colors hover:text-text ${heading.depth === 3 ? 'pl-3' : ''}`}
-                    >
-                      {heading.text}
-                    </a>
-                  </li>
-                ))}
-              </ul>
-            </nav>
-          </aside>
-        )}
+        <TableOfContents headings={headings ?? []} />
       </div>
     </article>
   </main>

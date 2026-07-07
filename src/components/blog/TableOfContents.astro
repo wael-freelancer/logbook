@@ -2,24 +2,82 @@
 interface Props {
   headings: { depth: number; slug: string; text: string }[];
 }
-
 const { headings } = Astro.props;
 ---
 
-<nav aria-label="Table of contents" class="sticky top-24 max-h-[calc(100vh-8rem)] overflow-y-auto">
-  <h3 class="mb-4 text-sm font-semibold text-text-secondary uppercase tracking-wide">
-    Contents
-  </h3>
-  <ul class="space-y-1 border-l border-border pl-4">
-    {headings.filter((h) => h.depth <= 3).map((heading) => (
-      <li>
-        <a
-          href={`#${heading.slug}`}
-          class={`block py-1 text-sm leading-relaxed text-text-secondary transition-colors hover:text-text ${heading.depth === 3 ? 'pl-3' : ''}`}
-        >
-          {heading.text}
-        </a>
-      </li>
-    ))}
-  </ul>
-</nav>
+{headings.length > 0 && (
+  <aside class="hidden lg:block pt-12" aria-label="Table of contents">
+    <nav class="sticky top-24 max-h-[calc(100vh-8rem)] overflow-y-auto" id="toc-nav">
+      <h3 class="mb-4 text-sm font-semibold text-text-secondary uppercase tracking-wide">
+        Contents
+      </h3>
+      <ul class="space-y-1">
+        {headings.filter((h) => h.depth <= 3).map((heading) => (
+          <li>
+            <a
+              href={`#${heading.slug}`}
+              class={`block py-1 text-sm leading-relaxed text-text-secondary transition-all hover:text-primary border-l-2 border-transparent pl-4 ${heading.depth === 3 ? 'pl-7' : ''}`}
+            >
+              {heading.text}
+            </a>
+          </li>
+        ))}
+      </ul>
+    </nav>
+  </aside>
+)}
+
+<script>
+  (function () {
+    var nav = document.getElementById('toc-nav');
+    if (!nav) return;
+    var links = nav.querySelectorAll('a');
+    var headings = [];
+    var currentSlug = '';
+
+    function setActive(slug: string) {
+      if (slug === currentSlug) return;
+      currentSlug = slug;
+      for (var i = 0; i < links.length; i++) {
+        var href = links[i].getAttribute('href')!.slice(1);
+        if (href === slug) {
+          links[i].setAttribute('data-active', '');
+        } else {
+          links[i].removeAttribute('data-active');
+        }
+      }
+    }
+
+    for (var i = 0; i < links.length; i++) {
+      var id = links[i].getAttribute('href')!.slice(1);
+      var el = document.getElementById(id);
+      if (el) headings.push(el);
+    }
+
+    if (headings.length === 0) return;
+
+    setActive(headings[0].id);
+
+    var observer = new IntersectionObserver(
+      function (entries) {
+        for (var i = 0; i < entries.length; i++) {
+          if (entries[i].isIntersecting) {
+            setActive(entries[i].target.id);
+          }
+        }
+      },
+      { rootMargin: '-80px 0px -75% 0px' },
+    );
+
+    for (var i = 0; i < headings.length; i++) {
+      observer.observe(headings[i]);
+    }
+  })();
+</script>
+
+<style>
+  a[data-active] {
+    color: hsl(var(--color-primary));
+    border-color: hsl(var(--color-primary));
+  }
+</style>
