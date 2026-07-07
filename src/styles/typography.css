@@ -143,5 +143,6 @@
 
 .prose th {
   background-color: hsl(var(--color-surface-2));
+  color: hsl(var(--color-text));
   font-weight: 600;
 }
