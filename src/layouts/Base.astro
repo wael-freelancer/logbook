@@ -30,9 +30,8 @@ const props = Astro.props;
       const root = document.documentElement;
 
       function toggleTheme() {
-        const current = root.getAttribute('data-theme');
-        const newTheme = current === 'dark' ? 'light' : 'dark';
-        root.setAttribute('data-theme', newTheme);
+        const isDark = root.classList.toggle('dark');
+        const newTheme = isDark ? 'dark' : 'light';
         try {
           localStorage.setItem('theme', newTheme);
         } catch (e) {
@@ -43,7 +42,7 @@ const props = Astro.props;
 
       window.addEventListener('storage', (e) => {
         if (e.key === 'theme' && e.newValue) {
-          root.setAttribute('data-theme', e.newValue);
+          root.classList.toggle('dark', e.newValue === 'dark');
         }
       });
     </script>

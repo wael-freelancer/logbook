@@ -144,7 +144,7 @@ const currentPath = Astro.url.pathname;
   const root = document.documentElement;
 
   function updateThemeIcon() {
-    const isLight = root.getAttribute('data-theme') === 'light';
+    const isLight = !root.classList.contains('dark');
     if (themeToggle) {
       if (isLight) {
         themeToggle.classList.add('light');
@@ -157,9 +157,8 @@ const currentPath = Astro.url.pathname;
   updateThemeIcon();
 
   const toggleTheme = () => {
-    const currentTheme = root.getAttribute('data-theme');
-    const newTheme = currentTheme === 'dark' ? 'light' : 'dark';
-    root.setAttribute('data-theme', newTheme);
+    const isDark = root.classList.toggle('dark');
+    const newTheme = isDark ? 'dark' : 'light';
 
     try {
       localStorage.setItem('theme', newTheme);

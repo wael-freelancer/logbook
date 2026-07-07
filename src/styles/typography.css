@@ -10,10 +10,6 @@
   color: hsl(var(--color-text));
 }
 
-[data-theme="light"] .prose-dark {
-  color: hsl(var(--color-text));
-}
-
 .prose h1 {
   font-family: 'Cal Sans', system-ui, sans-serif;
   font-weight: 600;
@@ -95,8 +91,8 @@
   background-color: hsl(var(--color-surface-2));
 }
 
-[data-theme="dark"] .prose .astro-code,
-[data-theme="dark"] .prose .astro-code span {
+.dark .prose .astro-code,
+.dark .prose .astro-code span {
   color: var(--shiki-dark);
 }
 
