@@ -219,7 +219,6 @@ Live status of every task. Update this file as work progresses. The agent reads 
 
 - [ ] Deploy to Vercel (connect GitHub repo)
 - [ ] Configure environment variables in Vercel
-- [ ] Custom domain + HTTPS
 - [ ] Analytics setup (Vercel Analytics or Plausible)
 - [ ] Write 5+ real blog posts
 - [ ] Add 3+ real project case studies
