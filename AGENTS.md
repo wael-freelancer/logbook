@@ -1,46 +1,58 @@
 ## Development
 
-When starting the dev server, use background mode:
+Start dev server in background, manage with stop/status/logs:
 
 ```
 npm run astro dev --background
+npm run astro dev stop
+npm run astro dev status
+npm run astro dev logs
 ```
 
-Manage the background server with `npm run astro dev stop`, `npm run astro dev status`, and `npm run astro dev logs`.
-
-Server runs on `http://127.0.0.1:4321`.
+Server: `http://127.0.0.1:4321`
 
 ### Commands
 
 | Command | Action |
 |---------|--------|
-| `npm run dev` | Start local dev server |
+| `npm run dev` | Start dev server (foreground) |
 | `npm run build` | Build to `./dist/` |
-| `npm run preview` | Preview production build locally |
-| `npm run lint` | Run ESLint |
-| `npm run lint:fix` | Run ESLint with auto-fix |
-| `npm run format` | Format with Prettier |
-| `npm run format:check` | Check formatting |
+| `npm run preview` | Preview production build |
+| `npm run lint` | ESLint |
+| `npm run lint:fix` | ESLint with auto-fix |
+| `npm run format` | Prettier |
+| `npm run format:check` | Prettier check |
 | `npm run astro` | Astro CLI (add, check, etc.) |
 
-## Verification
+### Verification
 
-Before claiming work is complete, run `npm run build` and `npm run lint`. The project must build cleanly and pass linting.
+Before claiming work complete, run **both**:
+
+```
+npm run build
+npm run lint
+```
+
+Build and lint must pass. Optionally run `npm run astro check` for Astro-specific type checking.
 
 ## Project Conventions
 
-- **Framework:** Astro 6 with `.astro` components (no React/Vue/Svelte)
-- **Styling:** Tailwind CSS with `@tailwindcss/typography` (Prose) and `tailwind-merge` + `clsx` for class merging
-- **TypeScript:** Strict mode with `@` path alias pointing to `src/`
-- **Content:** Content collections defined in `src/content.config.ts` using Zod schemas
-- **Blog posts:** `src/content/blog/` — frontmatter: title, description (max 160 chars), pubDate, updatedDate?, tags[], draft, featured
-- **Projects:** `src/content/projects/` — frontmatter: title, description, tags[], status (active/archived/wip), featured, order (default 99), liveUrl?, repoUrl?, startDate, endDate?
-- **Markdown:** MDX with rehype-slug and rehype-autolink-headings (wrap behavior); Shiki code highlighting (github-light / github-dark-dimmed)
-- **SEO:** JSON-LD component, sitemap, open graph image generation at `src/pages/og/[slug].png.ts`
+- **Framework:** Astro 6, `.astro` components only (no React/Vue/Svelte)
+- **Styling:** Tailwind CSS with `@tailwindcss/typography` (Prose class), `clsx` + `tailwind-merge` (`cn()` utility in `src/lib/utils.ts`)
+- **Design tokens:** CSS custom properties for colors (`--color-bg`, `--color-surface`, `--color-primary`, `--color-text`, etc.), fonts (Inter Variable / JetBrains Mono / Cal Sans), radius, shadows, z-index, animation durations — all exposed in `tailwind.config.cjs` under `extend`
+- **Dark mode:** `class` strategy with `localStorage` persistence and `prefers-color-scheme` fallback; FOUC prevention via inline script in `BaseHead.astro`
+- **TypeScript:** Strict mode (`astro/tsconfigs/strict`), `@/` alias → `src/`
+- **Content collections:** `src/content.config.ts` with Zod schemas — `blog` (title, description max 160 chars, pubDate, updatedDate?, tags[], draft, featured) and `projects` (title, description, tags[], status[active/archived/wip], featured, order default 99, liveUrl?, repoUrl?, startDate, endDate?)
+- **Markdown:** MDX with rehype-slug + rehype-autolink-headings (`wrap` behavior); Shiki themes `github-light` / `github-dark-dimmed` with `defaultColor: false` (colors via CSS, not inline styles)
+- **Animations:** `motion` library (`^12.41.0`) available; custom Tailwind keyframes for fade, slide, scale, orb-float, gradient-text
+- **SEO:** JSON-LD in `BaseHead.astro`, `@astrojs/sitemap`, OG image generation at `src/pages/og/[slug].png.ts` (SVG-based, `prerender = false`, SSR)
+- **API routes:** Contact form at `src/pages/api/contact.ts` (Zod validation), views at `src/pages/api/views/`
+- **RSS:** `src/pages/rss.xml.ts` using `@astrojs/rss`
 - **Deployment:** Vercel adapter (`@astrojs/vercel`)
-- **HMR:** Configured for `logbook.test` domain via WSS
-- **Formatting:** Prettier with `prettier-plugin-astro`
-- **Linting:** ESLint with `eslint-plugin-astro` and `eslint-config-prettier`
+- **HMR:** Configured for `logbook.test` domain via WSS (port 443)
+- **Formatting:** Prettier with `prettier-plugin-astro`, semi, single quotes, trailing commas, 100 print width
+- **Linting:** ESLint flat config with `eslint-plugin-astro` (flat/recommended), `eslint-config-prettier`, and `no-console: warn`
+- **Package install:** `legacy-peer-deps=true` in `.npmrc` — use `npm install` (not `npm ci`)
 
 ### Component Structure
 
@@ -48,19 +60,15 @@ Before claiming work is complete, run `npm run build` and `npm run lint`. The pr
 src/
 ├── components/
 │   ├── blog/       # Blog-specific components
-│   ├── home/       # Home page sections
+│   ├── home/       # Home page sections (Hero, FeaturedWork, RecentPosts)
 │   ├── icons/      # Inline SVG icon components
 │   ├── layout/     # Header, Footer, BaseHead, TagAside
 │   ├── projects/   # Project cards, grids, badges
 │   ├── seo/        # JSON-LD structured data
-│   └── ui/         # Reusable UI (Card, Prose, Badge, Button, Pagination)
-├── layouts/        # Astro layout components
+│   └── ui/         # Reusable (Badge, Button, Card, Pagination, Prose)
+├── layouts/        # Base, BlogPost, Page
 ├── lib/            # Utility modules (posts.ts, projects.ts, utils.ts)
-└── pages/          # Routes and API endpoints
+└── pages/          # Routes + API endpoints (blog/[page], blog/[slug], projects/[slug], tags/, og/[slug], api/contact, api/views)
 ```
 
-## Plans & Specs
-
-Design documents and implementation plans are in `docs/superpowers/`:
-- `plans/` — implementation plans
-- `specs/` — component and page design specs
+Design docs in `docs/superpowers/plans/` and `docs/superpowers/specs/`.
