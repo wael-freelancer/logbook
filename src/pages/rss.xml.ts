@@ -2,7 +2,7 @@ import rss from '@astrojs/rss';
 import { getSortedPosts } from '@/lib/posts';
 
 export async function GET(context: { site: string }) {
-  const posts = await getSortedPosts();
+  const sorted = await getSortedPosts();
   const site = context.site ?? import.meta.env.SITE ?? 'https://logbook.vercel.app';
   return rss({
     title: 'Log Book',

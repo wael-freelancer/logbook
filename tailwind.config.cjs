@@ -2,6 +2,7 @@ const { fontFamily } = require('tailwindcss/defaultTheme');
 
 /** @type {import('tailwindcss').Config} */
 module.exports = {
+  darkMode: ['selector', '[data-theme="dark"]'],
   content: ['./src/**/*.{astro,html,js,jsx,md,mdx,svelte,ts,tsx,vue}'],
   theme: {
     extend: {
@@ -31,6 +32,7 @@ module.exports = {
           bg: 'hsl(var(--color-inline-code-bg) / <alpha-value>)',
           text: 'hsl(var(--color-inline-code-text) / <alpha-value>)',
         },
+        accent: 'hsl(var(--color-accent) / <alpha-value>)',
         success: 'hsl(var(--color-success) / <alpha-value>)',
         warning: 'hsl(var(--color-warning) / <alpha-value>)',
         danger: 'hsl(var(--color-danger) / <alpha-value>)',
