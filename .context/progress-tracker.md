@@ -230,7 +230,7 @@ Live status of every task. Update this file as work progresses. The agent reads 
 
 **Phase 7 Gate:** ✅ Deployed, analytics active, build/lint clean, content published. Remaining items need manual action (cross-browser tests, Search Console, monitoring).
 
-> **Notes:** Phase 7 implemented on 2026-07-07. Changes: `@vercel/analytics` installed (v2.0.1) and added to BaseHead; mobile theme toggle button now has working click handler; about page timeline last-item padding fixed. Vercel auto-deploys configured via GitHub push. Placeholder social links and repo URLs kept per user preference. Git pushed to `wael-freelancer/logbook` on `main` branch.
+> **Notes:** Phase 7 implemented on 2026-07-07. Changes: `@vercel/analytics` installed (v2.0.1) and added to BaseHead; mobile theme toggle button now has working click handler; about page timeline last-item padding fixed. Placeholder social links and repo URLs kept per user preference. Site deployed via `vercel deploy --prod` (no GitHub integration). Production URL: `https://logbook-kohl.vercel.app`. Site URL in `astro.config.mjs` updated to match. To deploy future changes: `vercel deploy --prod`.
 
 ---
 
