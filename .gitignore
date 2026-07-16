@@ -1,5 +1,8 @@
 # build output
 dist/
+
+# cursor context files
+.context/
 # generated types
 .astro/
 
