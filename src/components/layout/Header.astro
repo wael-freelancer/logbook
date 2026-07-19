@@ -33,7 +33,7 @@ const currentPath = Astro.url.pathname;
       {navLinks.map((link) => (
         <a
           href={link.href}
-          class={`text-sm font-medium transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary focus-visible:ring-offset-2 ${currentPath.startsWith(link.href) ? 'text-text' : 'text-text-secondary hover:text-text'}`}
+          class={`text-sm font-medium transition-colors focus-visible:outline-none focus-visible:ring-0 ${currentPath.startsWith(link.href) ? 'text-text' : 'text-text-secondary hover:text-text'}`}
           aria-current={currentPath.startsWith(link.href) ? 'page' : undefined}
         >
           {link.label}
@@ -41,25 +41,27 @@ const currentPath = Astro.url.pathname;
       ))}
     </div>
 
-    <!-- Theme toggle button -->
-    <button
-      id="theme-toggle"
-      class="group rounded-full p-2 text-text-secondary transition-colors hover:text-text focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary focus-visible:ring-offset-2"
-      aria-label="Toggle dark/light mode"
-    >
-      <IconSun class="block h-5 w-5 group-[.light]:hidden" />
-      <IconMoon class="hidden h-5 w-5 group-[.light]:block" />
-    </button>
+    <div class="flex items-center gap-1">
+      <!-- Theme toggle button -->
+      <button
+        id="theme-toggle"
+        class="group rounded-full p-2 text-text-secondary transition-colors hover:text-text focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary focus-visible:ring-offset-2"
+        aria-label="Toggle dark/light mode"
+      >
+        <IconSun class="block h-5 w-5 group-[.light]:hidden" />
+        <IconMoon class="hidden h-5 w-5 group-[.light]:block" />
+      </button>
 
-    <!-- Mobile menu button -->
-    <button
-      id="mobile-menu-toggle"
-      class="group rounded-full p-2 text-text-secondary transition-colors hover:text-text focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary focus-visible:ring-offset-2 sm:hidden"
-      aria-label="Toggle mobile menu"
-      aria-expanded="false"
-    >
-      <IconMenu class="h-6 w-6" />
-    </button>
+      <!-- Mobile menu button -->
+      <button
+        id="mobile-menu-toggle"
+        class="group rounded-full p-2 text-text-secondary transition-colors hover:text-text focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary focus-visible:ring-offset-2 sm:hidden"
+        aria-label="Toggle mobile menu"
+        aria-expanded="false"
+      >
+        <IconMenu class="h-6 w-6" />
+      </button>
+    </div>
 
     <!-- Mobile menu overlay -->
     <div id="mobile-menu" class="hidden fixed inset-x-0 top-16 z-overlay border-t border-border bg-bg px-4 py-6 sm:hidden">
@@ -67,22 +69,13 @@ const currentPath = Astro.url.pathname;
         {navLinks.map((link) => (
           <a
             href={link.href}
-            class={`rounded-lg px-3 py-2 text-base font-medium transition-colors ${currentPath.startsWith(link.href) ? 'bg-primary-subtle text-text' : 'text-text-secondary hover:bg-surface-2 hover:text-text'}`}
+            class={`rounded-lg px-3 py-2 text-base font-medium transition-colors focus-visible:outline-none focus-visible:ring-0 ${currentPath.startsWith(link.href) ? 'bg-primary-subtle text-text' : 'text-text-secondary hover:bg-surface-2 hover:text-text'}`}
             aria-current={currentPath.startsWith(link.href) ? 'page' : undefined}
           >
             {link.label}
           </a>
         ))}
-
-        <!-- Mobile theme toggle -->
-        <button
-          id="mobile-theme-toggle"
-          class="mt-4 flex items-center gap-3 rounded-lg px-3 py-2 text-base font-medium text-text-secondary transition-colors hover:bg-surface-2 hover:text-text"
-          aria-label="Toggle dark/light mode"
-        >
-          <IconMoon class="h-5 w-5" />
-          <span>Toggle theme</span>
-        </button>
+ 
       </nav>
     </div>
   </nav>
@@ -133,7 +126,7 @@ const currentPath = Astro.url.pathname;
     document.addEventListener('click', (e) => {
       if (!mobileMenu.classList.contains('hidden') &&
           !mobileMenu.contains(e.target) &&
-          e.target !== mobileMenuToggle) {
+          !mobileMenuToggle.contains(e.target)) {
         mobileMenu.classList.add('hidden');
         mobileMenuToggle.setAttribute('aria-expanded', 'false');
       }
@@ -174,10 +167,5 @@ const currentPath = Astro.url.pathname;
   if (themeToggle) {
     themeToggle.addEventListener('click', toggleTheme);
   }
-
-  // Mobile theme toggle
-  const mobileThemeToggle = document.getElementById('mobile-theme-toggle');
-  if (mobileThemeToggle) {
-    mobileThemeToggle.addEventListener('click', toggleTheme);
-  }
+ 
 </script>
